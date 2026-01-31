@@ -218,21 +218,12 @@ MIT License - see [LICENSE](LICENSE)
 
 ## Credits
 
-**Powered by:**
-- [@azure/arm-compute](https://www.npmjs.com/package/@azure/arm-compute) - Azure Virtual Machines API
-- [@azure/arm-compute-rest](https://www.npmjs.com/package/@azure/arm-compute-rest) - Azure Disks API
-- [@azure/arm-sql](https://www.npmjs.com/package/@azure/arm-sql) - Azure SQL Database API
-- [@azure/arm-storage](https://www.npmjs.com/package/@azure/arm-storage) - Azure Storage API
-- [@azure/arm-network](https://www.npmjs.com/package/@azure/arm-network) - Azure Public IPs API
-- [@azure/identity](https://www.npmjs.com/package/@azure/identity) - Azure authentication
-- [@aws-sdk/client-ec2](https://www.npmjs.com/package/@aws-sdk/client-ec2) - AWS EC2 API
-- [@aws-sdk/client-rds](https://www.npmjs.com/package/@aws-sdk/client-rds) - AWS RDS API
-- [@aws-sdk/client-s3](https://www.npmjs.com/package/@aws-sdk/client-s3) - AWS S3 API
-- [@aws-sdk/client-elastic-load-balancing-v2](https://www.npmjs.com/package/@aws-sdk/client-elastic-load-balancing-v2) - AWS ELB API
-- [@aws-sdk/client-cloudwatch](https://www.npmjs.com/package/@aws-sdk/client-cloudwatch) - AWS CloudWatch metrics
-- [Commander.js](https://www.npmjs.com/package/commander) - CLI framework
-- [cli-table3](https://www.npmjs.com/package/cli-table3) - Terminal tables
-- [chalk](https://www.npmjs.com/package/chalk) - Terminal colors
+**Built with:**
+- [AWS SDK for JavaScript v3](https://aws.amazon.com/sdk-for-javascript/) - AWS cloud APIs
+- [Azure SDK for JavaScript](https://azure.github.io/azure-sdk-for-js/) - Azure cloud APIs
+- [Commander.js](https://github.com/tj/commander.js) - CLI framework
+- [cli-table3](https://github.com/cli-table/cli-table3) - Terminal tables
+- [Chalk](https://github.com/chalk/chalk) - Terminal styling
 
 ---
 
