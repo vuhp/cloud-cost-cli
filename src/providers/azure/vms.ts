@@ -37,6 +37,11 @@ export async function analyzeAzureVMs(
     for await (const vm of vms) {
       if (!vm.id || !vm.name) continue;
 
+      // Filter by location if specified
+      if (client.location && vm.location?.toLowerCase() !== client.location.toLowerCase()) {
+        continue;
+      }
+
       const vmSize = vm.hardwareProfile?.vmSize || 'Unknown';
       const powerState = await getVMPowerState(computeClient, vm);
       

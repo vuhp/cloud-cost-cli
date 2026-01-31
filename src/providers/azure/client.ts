@@ -29,7 +29,7 @@ export class AzureClient {
     }
 
     // Default to East US if no location specified
-    this.location = config.location || 'eastus';
+    this.location = config.location || '';
   }
 
   getComputeClient(): ComputeManagementClient {

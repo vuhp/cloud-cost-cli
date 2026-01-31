@@ -26,6 +26,11 @@ export async function analyzeAzureDisks(
     for await (const disk of disks) {
       if (!disk.id || !disk.name) continue;
 
+      // Filter by location if specified
+      if (client.location && disk.location?.toLowerCase() !== client.location.toLowerCase()) {
+        continue;
+      }
+
       const sizeGB = disk.diskSizeGB || 0;
       const diskType = disk.sku?.name || 'Standard_LRS';
       const currentCost = getDiskMonthlyCost(sizeGB, diskType);

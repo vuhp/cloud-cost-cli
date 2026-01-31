@@ -21,6 +21,11 @@ export async function analyzeAzureStorage(
     for await (const account of accounts) {
       if (!account.id || !account.name) continue;
 
+      // Filter by location if specified
+      if (client.location && account.location?.toLowerCase() !== client.location.toLowerCase()) {
+        continue;
+      }
+
       const resourceGroup = extractResourceGroup(account.id);
       if (!resourceGroup) continue;
 

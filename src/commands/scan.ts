@@ -163,7 +163,12 @@ async function scanAzure(options: ScanCommandOptions) {
     location: options.location,
   });
 
-  info(`Scanning Azure subscription (${client.subscriptionId}, location: ${client.location})...`);
+  info(`Scanning Azure subscription (${client.subscriptionId})...`);
+  if (client.location) {
+    info(`Filtering resources by location: ${client.location}`);
+  } else {
+    info('Scanning all locations (no filter specified)');
+  }
   
   if (options.accurate) {
     info('Note: --accurate flag is not yet implemented. Using estimated pricing.');
@@ -237,7 +242,7 @@ async function scanAzure(options: ScanCommandOptions) {
   const report: ScanReport = {
     provider: 'azure',
     accountId: client.subscriptionId,
-    region: client.location,
+    region: client.location || 'all',
     scanPeriod: {
       start: new Date(Date.now() - (parseInt(options.days || '7') * 24 * 60 * 60 * 1000)),
       end: new Date(),

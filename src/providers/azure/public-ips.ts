@@ -17,6 +17,11 @@ export async function analyzeAzurePublicIPs(
     for await (const ip of publicIPs) {
       if (!ip.id || !ip.name) continue;
 
+      // Filter by location if specified
+      if (client.location && ip.location?.toLowerCase() !== client.location.toLowerCase()) {
+        continue;
+      }
+
       // Opportunity: Unassociated public IP
       if (!ip.ipConfiguration) {
         opportunities.push({

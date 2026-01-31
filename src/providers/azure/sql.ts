@@ -28,6 +28,11 @@ export async function analyzeAzureSQL(
     for await (const server of servers) {
       if (!server.id || !server.name) continue;
 
+      // Filter by location if specified
+      if (client.location && server.location?.toLowerCase() !== client.location.toLowerCase()) {
+        continue;
+      }
+
       const resourceGroup = extractResourceGroup(server.id);
       if (!resourceGroup) continue;
 

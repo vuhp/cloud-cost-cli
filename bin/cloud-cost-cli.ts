@@ -16,7 +16,7 @@ program
   .option('--region <region>', 'AWS region (e.g., us-east-1)')
   .option('--profile <profile>', 'AWS profile name', 'default')
   .option('--subscription-id <id>', 'Azure subscription ID')
-  .option('--location <location>', 'Azure location (e.g., eastus)', 'eastus')
+  .option('--location <location>', 'Azure location filter (e.g., eastus, westus2) - optional, scans all if omitted')
   .option('--top <N>', 'Show top N opportunities', '5')
   .option('--output <table|json|markdown>', 'Output format', 'table')
   .option('--days <N>', 'Analysis period in days', '30')
