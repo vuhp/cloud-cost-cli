@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { Ollama } from 'ollama';
 import { SavingsOpportunity } from '../types';
 import { ScriptGenerator } from './script-generator';
+import { ExplanationCache } from '../utils/cache';
 
 export interface AIExplanation {
   summary: string;
@@ -10,6 +11,7 @@ export interface AIExplanation {
   riskLevel: 'low' | 'medium' | 'high';
   estimatedTime: string;
   script?: string;
+  cached?: boolean;
 }
 
 export type AIProvider = 'openai' | 'ollama';
@@ -28,8 +30,12 @@ export class AIService {
   private model: string = 'gpt-4o-mini';
   private enabled: boolean = false;
   private maxExplanations: number = 3;
+  private cache: ExplanationCache;
+  private useCache: boolean = true;
 
   constructor(config?: AIConfig) {
+    this.cache = new ExplanationCache();
+    
     if (!config) {
       // Try to auto-detect from environment
       if (process.env.OPENAI_API_KEY) {
@@ -66,6 +72,14 @@ export class AIService {
   }
 
   async explainOpportunity(opportunity: SavingsOpportunity): Promise<AIExplanation> {
+    // Check cache first
+    if (this.useCache) {
+      const cached = this.cache.get(opportunity, this.provider, this.model);
+      if (cached) {
+        return { ...cached, cached: true };
+      }
+    }
+
     const prompt = this.buildPrompt(opportunity);
 
     try {
@@ -111,7 +125,14 @@ export class AIService {
         throw new Error('No AI provider configured');
       }
 
-      return this.parseExplanation(content, opportunity);
+      const explanation = this.parseExplanation(content, opportunity);
+      
+      // Cache the result
+      if (this.useCache) {
+        this.cache.set(opportunity, this.provider, this.model, explanation);
+      }
+      
+      return { ...explanation, cached: false };
     } catch (error: any) {
       throw new Error(`AI explanation failed: ${error.message}`);
     }

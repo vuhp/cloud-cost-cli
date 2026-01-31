@@ -70,7 +70,8 @@ export async function renderTable(
         console.log(chalk.cyan(`Analyzing opportunity #${i + 1}...`));
         const explanation = await aiService.explainOpportunity(opp);
         
-        console.log(chalk.bold(`\n💡 Opportunity #${i + 1}: ${opp.resourceId}`));
+        const cacheIndicator = explanation.cached ? chalk.dim(' (cached)') : '';
+        console.log(chalk.bold(`\n💡 Opportunity #${i + 1}: ${opp.resourceId}${cacheIndicator}`));
         console.log(chalk.dim('─'.repeat(80)));
         console.log(chalk.white(explanation.summary));
         console.log();
