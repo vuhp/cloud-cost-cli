@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { scanCommand } from '../src/commands/scan.js';
 import { askCommand } from '../src/commands/ask.js';
+import { configCommand } from '../src/commands/config.js';
 
 const program = new Command();
 
@@ -35,5 +36,10 @@ program
   .option('--ai-provider <openai|ollama>', 'AI provider (default: openai)', 'openai')
   .option('--ai-model <model>', 'AI model to use')
   .action(askCommand);
+
+program
+  .command('config <action> [key] [value]')
+  .description('Manage configuration (actions: init, show, get, set, path)')
+  .action(configCommand);
 
 program.parse();

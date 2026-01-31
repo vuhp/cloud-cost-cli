@@ -3,6 +3,7 @@ import { Ollama } from 'ollama';
 import { SavingsOpportunity } from '../types';
 import { ScriptGenerator } from './script-generator';
 import { ExplanationCache } from '../utils/cache';
+import { ConfigLoader } from '../utils/config';
 
 export interface AIExplanation {
   summary: string;
@@ -42,13 +43,24 @@ export class AIService {
   constructor(config?: AIConfig) {
     this.cache = new ExplanationCache();
     
+    // Load from config file if no explicit config provided
     if (!config) {
-      // Try to auto-detect from environment
-      if (process.env.OPENAI_API_KEY) {
-        config = { provider: 'openai', apiKey: process.env.OPENAI_API_KEY };
+      const fileConfig = ConfigLoader.load();
+      
+      if (fileConfig.ai?.apiKey || process.env.OPENAI_API_KEY) {
+        config = {
+          provider: fileConfig.ai?.provider || 'openai',
+          apiKey: fileConfig.ai?.apiKey || process.env.OPENAI_API_KEY,
+          model: fileConfig.ai?.model,
+          maxExplanations: fileConfig.ai?.maxExplanations,
+        };
       } else {
         // Default to ollama (local, no API key needed)
-        config = { provider: 'ollama' };
+        config = {
+          provider: fileConfig.ai?.provider || 'ollama',
+          model: fileConfig.ai?.model,
+          maxExplanations: fileConfig.ai?.maxExplanations,
+        };
       }
     }
 
