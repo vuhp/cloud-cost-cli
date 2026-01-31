@@ -33,7 +33,8 @@ export function renderTable(report: ScanReport, topN: number = 5): void {
 
   const table = new Table({
     head: ['#', 'Type', 'Resource ID', 'Recommendation', 'Savings/mo'],
-    colWidths: [5, 10, 25, 50, 15],
+    colWidths: [5, 12, 40, 60, 15],
+    wordWrap: true,
     style: {
       head: ['cyan'],
     },
@@ -50,6 +51,13 @@ export function renderTable(report: ScanReport, topN: number = 5): void {
   });
 
   console.log(table.toString());
+
+  // Show total count if there are more opportunities
+  if (report.opportunities.length > topN) {
+    console.log(
+      chalk.dim(`\n... and ${report.opportunities.length - topN} more opportunities (use --top ${report.opportunities.length} to see all)`)
+    );
+  }
 
   console.log(
     chalk.bold(

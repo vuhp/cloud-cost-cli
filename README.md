@@ -84,14 +84,19 @@ export AZURE_SUBSCRIPTION_ID="your-subscription-id"
 cloud-cost-cli scan --provider azure --location eastus
 ```
 
-**Specify output format:**
+**Show more opportunities:**
 ```bash
-cloud-cost-cli scan --provider aws --output json > report.json
+cloud-cost-cli scan --provider aws --top 20  # Show top 20 instead of default 5
 ```
 
 **Filter by minimum savings:**
 ```bash
 cloud-cost-cli scan --provider azure --min-savings 50  # Only show opportunities > $50/month
+```
+
+**Specify output format:**
+```bash
+cloud-cost-cli scan --provider aws --output json > report.json
 ```
 
 **Example output:**
