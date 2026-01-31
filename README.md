@@ -58,11 +58,11 @@ npm install -g cloud-cost-cli
 **Or download standalone binary:**
 ```bash
 # macOS/Linux
-curl -L https://github.com/YOUR_USERNAME/cloud-cost-cli/releases/latest/download/cloud-cost-cli-$(uname -s)-$(uname -m) -o /usr/local/bin/cloud-cost-cli
+curl -L https://github.com/vuhp/cloud-cost-cli/releases/latest/download/cloud-cost-cli-$(uname -s)-$(uname -m) -o /usr/local/bin/cloud-cost-cli
 chmod +x /usr/local/bin/cloud-cost-cli
 
 # Windows (PowerShell)
-Invoke-WebRequest -Uri "https://github.com/YOUR_USERNAME/cloud-cost-cli/releases/latest/download/cloud-cost-cli-windows-x64.exe" -OutFile "$env:USERPROFILE\bin\cloud-cost-cli.exe"
+Invoke-WebRequest -Uri "https://github.com/vuhp/cloud-cost-cli/releases/latest/download/cloud-cost-cli-windows-x64.exe" -OutFile "$env:USERPROFILE\bin\cloud-cost-cli.exe"
 ```
 
 ---
@@ -175,7 +175,7 @@ Contributions welcome! Please open an issue before submitting large PRs.
 
 **Development setup:**
 ```bash
-git clone https://github.com/YOUR_USERNAME/cloud-cost-cli.git
+git clone https://github.com/vuhp/cloud-cost-cli.git
 cd cloud-cost-cli
 npm install
 npm run dev
@@ -190,7 +190,7 @@ npm test
 
 ## Sponsorship
 
-If this tool saves you money, consider sponsoring development via [GitHub Sponsors](https://github.com/sponsors/YOUR_USERNAME).
+If this tool saves you money, consider sponsoring development via [GitHub Sponsors](https://github.com/sponsors/vuhp).
 
 **Sponsor tiers:**
 - ☕ $5/mo: Thank you!
