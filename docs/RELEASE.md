@@ -4,8 +4,28 @@ This document describes how to publish a new version of cloud-cost-cli.
 
 ## Prerequisites
 
-1. **NPM Token** - Create an automation token at https://www.npmjs.com/settings/YOUR_USERNAME/tokens
-2. **GitHub Secret** - Add the token as `NPM_TOKEN` in repository Settings → Secrets and variables → Actions
+### 1. NPM Granular Access Token
+
+npm now uses "Granular Access Tokens" instead of automation tokens.
+
+**Create the token:**
+1. Go to https://www.npmjs.com/settings/YOUR_USERNAME/tokens
+2. Click **"Generate New Token"** → **"Granular Access Token"**
+3. Configure the token:
+   - **Token name**: `cloud-cost-cli-publish` (or any name)
+   - **Expiration**: 1 year (or No expiration)
+   - **Packages and scopes**: Select packages → Choose `cloud-cost-cli`
+   - **Permissions**: Read and write
+4. Click **"Generate Token"**
+5. Copy the token (starts with `npm_...`)
+
+### 2. Add Token to GitHub Secrets
+
+1. Go to https://github.com/vuhp/cloud-cost-cli/settings/secrets/actions
+2. Click **"New repository secret"**
+3. Name: `NPM_TOKEN`
+4. Value: (paste the `npm_...` token)
+5. Click **"Add secret"**
 
 ## Steps to Release
 
