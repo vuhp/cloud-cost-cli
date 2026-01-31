@@ -14,6 +14,12 @@ export interface AIExplanation {
   cached?: boolean;
 }
 
+export interface QueryAnswer {
+  response: string;
+  suggestions?: string[];
+  relatedOpportunities?: any[];
+}
+
 export type AIProvider = 'openai' | 'ollama';
 
 export interface AIConfig {
@@ -213,6 +219,117 @@ Format your response as JSON:
         actionPlan: [],
         riskLevel: 'medium',
         estimatedTime: 'Unknown',
+      };
+    }
+  }
+
+  async answerQuery(query: string, scanReport: any): Promise<QueryAnswer> {
+    const context = this.buildQueryContext(scanReport);
+    const prompt = this.buildQueryPrompt(query, context);
+
+    try {
+      let content: string;
+
+      if (this.provider === 'openai' && this.openaiClient) {
+        const response = await this.openaiClient.chat.completions.create({
+          model: this.model,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a cloud cost optimization expert. Answer user questions about their cloud costs clearly and concisely. Provide actionable insights and suggest specific cost-saving opportunities when relevant. Always respond with valid JSON.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 800,
+        });
+        content = response.choices[0]?.message?.content || '';
+      } else if (this.provider === 'ollama' && this.ollamaClient) {
+        const response = await this.ollamaClient.chat({
+          model: this.model,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a cloud cost optimization expert. Answer user questions about their cloud costs clearly and concisely. Provide actionable insights and suggest specific cost-saving opportunities when relevant. Always respond with valid JSON.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          options: {
+            temperature: 0.7,
+            num_predict: 800,
+          },
+        });
+        content = response.message.content;
+      } else {
+        throw new Error('No AI provider configured');
+      }
+
+      return this.parseQueryAnswer(content, scanReport);
+    } catch (error: any) {
+      throw new Error(`Query failed: ${error.message}`);
+    }
+  }
+
+  private buildQueryContext(scanReport: any): string {
+    const { summary, opportunities } = scanReport;
+    
+    let context = `Cost Optimization Report:\n`;
+    context += `Total potential savings: $${summary.totalSavings.toFixed(2)}/month\n`;
+    context += `Total opportunities: ${summary.totalOpportunities}\n\n`;
+    
+    context += `Top opportunities:\n`;
+    opportunities.slice(0, 10).forEach((opp: any, i: number) => {
+      context += `${i + 1}. ${opp.resourceType} (${opp.resourceId}): ${opp.recommendation} - Save $${opp.estimatedSavings.toFixed(2)}/mo\n`;
+    });
+    
+    return context;
+  }
+
+  private buildQueryPrompt(query: string, context: string): string {
+    return `User question: "${query}"
+
+Context from recent cost scan:
+${context}
+
+Please answer the user's question based on this cost data. Respond in JSON format:
+{
+  "response": "Your clear, helpful answer here",
+  "suggestions": ["Optional suggestion 1", "Optional suggestion 2"],
+  "relatedOpportunityIndexes": [0, 1, 2]  // Indexes from the context (0-based)
+}`;
+  }
+
+  private parseQueryAnswer(content: string, scanReport: any): QueryAnswer {
+    try {
+      // Try to extract JSON from markdown code blocks
+      const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+      const jsonStr = jsonMatch ? jsonMatch[1] : content;
+      
+      const parsed = JSON.parse(jsonStr.trim());
+      
+      const answer: QueryAnswer = {
+        response: parsed.response || content,
+        suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions : undefined,
+      };
+      
+      // Map opportunity indexes to actual opportunities
+      if (Array.isArray(parsed.relatedOpportunityIndexes)) {
+        answer.relatedOpportunities = parsed.relatedOpportunityIndexes
+          .map((idx: number) => scanReport.opportunities[idx])
+          .filter((opp: any) => opp !== undefined);
+      }
+      
+      return answer;
+    } catch (error) {
+      // Fallback: return raw content
+      return {
+        response: content,
       };
     }
   }

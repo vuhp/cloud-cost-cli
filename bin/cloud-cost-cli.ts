@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { scanCommand } from '../src/commands/scan.js';
+import { askCommand } from '../src/commands/ask.js';
 
 const program = new Command();
 
@@ -27,5 +28,12 @@ program
   .option('--ai-model <model>', 'AI model (gpt-4o-mini for OpenAI, llama3.2:3b for Ollama)')
   .option('--verbose', 'Verbose logging')
   .action(scanCommand);
+
+program
+  .command('ask <query>')
+  .description('Ask natural language questions about your cloud costs')
+  .option('--ai-provider <openai|ollama>', 'AI provider (default: openai)', 'openai')
+  .option('--ai-model <model>', 'AI model to use')
+  .action(askCommand);
 
 program.parse();

@@ -16,6 +16,7 @@ import { renderTable } from '../reporters/table';
 import { renderJSON } from '../reporters/json';
 import { error, info, success } from '../utils/logger';
 import { AIService } from '../services/ai';
+import { saveScanCache } from './ask';
 
 interface ScanCommandOptions {
   provider: string;
@@ -182,6 +183,9 @@ async function scanAWS(options: ScanCommandOptions) {
       }
     }
     
+    // Save scan cache for natural language queries
+    saveScanCache(options.provider, options.region, report);
+    
     if (options.output === 'json') {
       renderJSON(report);
     } else {
@@ -313,6 +317,9 @@ async function scanAzure(options: ScanCommandOptions) {
       process.exit(1);
     }
   }
+  
+  // Save scan cache for natural language queries
+  saveScanCache('azure', client.location, report);
   
   if (options.output === 'json') {
     renderJSON(report);
