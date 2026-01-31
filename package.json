@@ -62,7 +62,8 @@
     "cli-table3": "^0.6.5",
     "commander": "^12.1.0",
     "dayjs": "^1.11.13",
-    "ini": "^6.0.0"
+    "ini": "^6.0.0",
+    "openai": "^6.17.0"
   },
   "devDependencies": {
     "@types/ini": "^4.1.1",

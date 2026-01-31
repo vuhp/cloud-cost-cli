@@ -2,8 +2,13 @@ import { SavingsOpportunity, ScanReport } from '../types';
 import Table from 'cli-table3';
 import chalk from 'chalk';
 import { formatCurrency } from '../utils';
+import { AIService, AIExplanation } from '../services/ai';
 
-export function renderTable(report: ScanReport, topN: number = 5): void {
+export async function renderTable(
+  report: ScanReport,
+  topN: number = 5,
+  aiService?: AIService
+): Promise<void> {
   console.log(chalk.bold('\nCloud Cost Optimization Report'));
   console.log(
     `Provider: ${report.provider} | Region: ${report.region} | Account: ${report.accountId}`
@@ -52,6 +57,41 @@ export function renderTable(report: ScanReport, topN: number = 5): void {
 
   console.log(table.toString());
 
+  // Show AI explanations if enabled
+  if (aiService && aiService.isEnabled()) {
+    console.log(chalk.bold('\n🤖 AI-Powered Insights:\n'));
+    
+    for (let i = 0; i < Math.min(3, opportunities.length); i++) {
+      const opp = opportunities[i];
+      try {
+        console.log(chalk.cyan(`Analyzing opportunity #${i + 1}...`));
+        const explanation = await aiService.explainOpportunity(opp);
+        
+        console.log(chalk.bold(`\n💡 Opportunity #${i + 1}: ${opp.resourceId}`));
+        console.log(chalk.dim('─'.repeat(80)));
+        console.log(chalk.white(explanation.summary));
+        console.log();
+        console.log(chalk.bold('Why this is wasteful:'));
+        console.log(explanation.whyWasteful);
+        
+        if (explanation.actionPlan.length > 0) {
+          console.log();
+          console.log(chalk.bold('Action plan:'));
+          explanation.actionPlan.forEach((step) => {
+            console.log(chalk.green(`  ${step}`));
+          });
+        }
+        
+        console.log();
+        console.log(`Risk: ${getRiskEmoji(explanation.riskLevel)} ${explanation.riskLevel.toUpperCase()}`);
+        console.log(`Time: ⏱️  ${explanation.estimatedTime}`);
+        console.log();
+      } catch (error: any) {
+        console.log(chalk.yellow(`⚠️  AI explanation failed: ${error.message}`));
+      }
+    }
+  }
+
   // Show total count if there are more opportunities
   if (report.opportunities.length > topN) {
     console.log(
@@ -77,4 +117,17 @@ export function renderTable(report: ScanReport, topN: number = 5): void {
     chalk.dim(`\n💡 Note: Cost estimates based on us-east-1 pricing and may vary by region.`)
   );
   console.log(chalk.dim(`   For more accurate estimates, actual costs depend on your usage and region.\n`));
+}
+
+function getRiskEmoji(risk: string): string {
+  switch (risk) {
+    case 'low':
+      return '✅';
+    case 'medium':
+      return '⚠️';
+    case 'high':
+      return '🚨';
+    default:
+      return '❓';
+  }
 }

@@ -15,6 +15,7 @@ import { ScanReport, SavingsOpportunity } from '../types/opportunity';
 import { renderTable } from '../reporters/table';
 import { renderJSON } from '../reporters/json';
 import { error, info, success } from '../utils/logger';
+import { AIService } from '../services/ai';
 
 interface ScanCommandOptions {
   provider: string;
@@ -28,6 +29,7 @@ interface ScanCommandOptions {
   minSavings?: string;
   verbose?: boolean;
   accurate?: boolean;
+  explain?: boolean;
 }
 
 export async function scanCommand(options: ScanCommandOptions) {
@@ -150,10 +152,18 @@ async function scanAWS(options: ScanCommandOptions) {
 
     // Render output
     const topN = parseInt(options.top || '5');
+    const aiService = options.explain ? new AIService(process.env.OPENAI_API_KEY) : undefined;
+    
+    if (options.explain && !process.env.OPENAI_API_KEY) {
+      error('--explain requires OPENAI_API_KEY environment variable');
+      info('Set it with: export OPENAI_API_KEY="sk-..."');
+      process.exit(1);
+    }
+    
     if (options.output === 'json') {
       renderJSON(report);
     } else {
-      renderTable(report, topN);
+      await renderTable(report, topN, aiService);
     }
 }
 
@@ -254,9 +264,17 @@ async function scanAzure(options: ScanCommandOptions) {
 
   // Render output
   const topN = parseInt(options.top || '5');
+  const aiService = options.explain ? new AIService(process.env.OPENAI_API_KEY) : undefined;
+  
+  if (options.explain && !process.env.OPENAI_API_KEY) {
+    error('--explain requires OPENAI_API_KEY environment variable');
+    info('Set it with: export OPENAI_API_KEY="sk-..."');
+    process.exit(1);
+  }
+  
   if (options.output === 'json') {
     renderJSON(report);
   } else {
-    renderTable(report, topN);
+    await renderTable(report, topN, aiService);
   }
 }

@@ -22,6 +22,7 @@ program
   .option('--days <N>', 'Analysis period in days', '30')
   .option('--min-savings <amount>', 'Filter by minimum savings ($/month)')
   .option('--accurate', 'Use real-time pricing from AWS (slower but more accurate)')
+  .option('--explain', 'AI-powered explanations for top opportunities (requires OPENAI_API_KEY)')
   .option('--verbose', 'Verbose logging')
   .action(scanCommand);
 
