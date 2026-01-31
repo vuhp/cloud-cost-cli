@@ -28,7 +28,7 @@ jobs:
       - name: Build
         run: npm run build
       
-      # Trusted publishing via OIDC - no token needed!
-      # Provenance is automatically generated
       - name: Publish to npm
         run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
