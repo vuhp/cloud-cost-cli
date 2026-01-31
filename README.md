@@ -208,8 +208,6 @@ MIT License - see [LICENSE](LICENSE)
 
 ## Credits
 
-Built by [Phuong Vu](https://github.com/YOUR_USERNAME) | Technical Architect | Singapore
-
 **Powered by:**
 - AWS SDK for JavaScript
 - Commander.js
