@@ -149,6 +149,27 @@ Create a config file at `~/.cloud-cost-cli/config.json` (optional):
 
 ---
 
+## Pricing Estimates
+
+**How cost estimates work:**
+
+Cost savings are estimated using AWS on-demand pricing for **us-east-1** (January 2026). These are approximations to help you prioritize optimization efforts.
+
+**Important notes:**
+- 💵 Actual costs vary by region (e.g., ap-southeast-1 may be 10-15% higher)
+- 📊 Estimates don't include Reserved Instances, Savings Plans, or spot discounts
+- 🔄 AWS pricing changes periodically
+- ⚙️ Additional costs like data transfer and storage operations not included
+
+**For the most accurate estimates:**
+- Use the `--accurate` flag (coming in v0.2.0) to fetch real-time pricing
+- Cross-reference with your AWS Cost Explorer
+- Consider estimates as directional guidance, not exact amounts
+
+The goal is to help you find waste quickly — even if estimates are ±20%, you'll still identify significant savings opportunities.
+
+---
+
 ## Roadmap
 
 **Current (v0.1.x):**

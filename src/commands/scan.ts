@@ -19,6 +19,7 @@ interface ScanCommandOptions {
   days?: string;
   minSavings?: string;
   verbose?: boolean;
+  accurate?: boolean; // Use real-time pricing from AWS Pricing API
 }
 
 export async function scanCommand(options: ScanCommandOptions) {
@@ -34,6 +35,11 @@ export async function scanCommand(options: ScanCommandOptions) {
     });
 
     info(`Scanning AWS account (profile: ${options.profile || 'default'}, region: ${client.region})...`);
+    
+    if (options.accurate) {
+      info('Note: --accurate flag is not yet implemented. Using estimated pricing.');
+      info('Real-time pricing will be available in a future release.');
+    }
 
     // Run analyzers in parallel
     info('Analyzing EC2 instances...');

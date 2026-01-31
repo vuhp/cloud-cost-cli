@@ -1,5 +1,7 @@
-// EC2 instance pricing (us-east-1, Linux, on-demand, monthly estimate)
-// Source: AWS pricing as of 2026-01, monthly = hourly × 730
+import { PricingService } from './pricing-service';
+
+// Fallback pricing estimates (based on us-east-1, Jan 2026)
+// Used when --accurate flag is not set or Pricing API fails
 
 export const EC2_PRICING: Record<string, number> = {
   't2.micro': 8.47,
@@ -21,7 +23,6 @@ export const EC2_PRICING: Record<string, number> = {
   'r5.xlarge': 182.50,
 };
 
-// EBS pricing (us-east-1, per GB/month)
 export const EBS_PRICING: Record<string, number> = {
   gp3: 0.08,
   gp2: 0.10,
@@ -31,7 +32,6 @@ export const EBS_PRICING: Record<string, number> = {
   sc1: 0.015,
 };
 
-// RDS pricing (us-east-1, per month)
 export const RDS_PRICING: Record<string, number> = {
   'db.t3.micro': 11.01,
   'db.t3.small': 22.63,
@@ -44,26 +44,90 @@ export const RDS_PRICING: Record<string, number> = {
   'db.r5.2xlarge': 700.80,
 };
 
-// S3 pricing (per GB/month)
 export const S3_PRICING = {
   standard: 0.023,
-  intelligentTiering: 0.023, // same base, but auto-transitions
+  intelligentTiering: 0.023,
   glacier: 0.004,
   glacierDeepArchive: 0.00099,
 };
 
-// ELB pricing (per month, excluding LCU charges)
 export const ELB_PRICING = {
-  alb: 16.43, // Application Load Balancer
-  nlb: 16.43, // Network Load Balancer
-  clb: 18.25, // Classic Load Balancer
+  alb: 16.43,
+  nlb: 16.43,
+  clb: 18.25,
 };
 
-// Elastic IP pricing (per hour when not associated)
-export const EIP_PRICING_HOURLY = 0.005; // ~$3.65/month
+export const EIP_PRICING_HOURLY = 0.005;
 
+/**
+ * Cost estimator with support for both estimate and accurate modes
+ */
+export class CostEstimator {
+  private pricingService?: PricingService;
+  private useAccuratePricing: boolean;
+
+  constructor(region: string, accurate: boolean = false) {
+    this.useAccuratePricing = accurate;
+    if (accurate) {
+      this.pricingService = new PricingService(region);
+    }
+  }
+
+  async getEC2MonthlyCost(instanceType: string): Promise<number> {
+    if (this.useAccuratePricing && this.pricingService) {
+      try {
+        return await this.pricingService.getEC2Price(instanceType);
+      } catch (error) {
+        // Fallback to estimate if API fails
+      }
+    }
+    return EC2_PRICING[instanceType] || 50; // Generic estimate if type unknown
+  }
+
+  async getEBSMonthlyCost(sizeGB: number, volumeType: string): Promise<number> {
+    let pricePerGB: number;
+
+    if (this.useAccuratePricing && this.pricingService) {
+      try {
+        pricePerGB = await this.pricingService.getEBSPrice(volumeType);
+      } catch (error) {
+        pricePerGB = EBS_PRICING[volumeType] || 0.08;
+      }
+    } else {
+      pricePerGB = EBS_PRICING[volumeType] || 0.08;
+    }
+
+    return sizeGB * pricePerGB;
+  }
+
+  async getRDSMonthlyCost(instanceClass: string, engine?: string): Promise<number> {
+    if (this.useAccuratePricing && this.pricingService && engine) {
+      try {
+        return await this.pricingService.getRDSPrice(instanceClass, engine);
+      } catch (error) {
+        // Fallback to estimate
+      }
+    }
+    return RDS_PRICING[instanceClass] || 100;
+  }
+
+  getS3MonthlyCost(sizeGB: number, storageClass: string = 'standard'): number {
+    const pricePerGB = S3_PRICING[storageClass as keyof typeof S3_PRICING] || S3_PRICING.standard;
+    return sizeGB * pricePerGB;
+  }
+
+  getELBMonthlyCost(type: 'alb' | 'nlb' | 'clb' = 'alb'): number {
+    return ELB_PRICING[type];
+  }
+
+  getEIPMonthlyCost(): number {
+    return EIP_PRICING_HOURLY * 730; // ~$3.65
+  }
+}
+
+// Legacy exports for backwards compatibility
 export function getEC2MonthlyCost(instanceType: string): number {
-  return EC2_PRICING[instanceType] || 0;
+  return EC2_PRICING[instanceType] || 50;
 }
 
 export function getEBSMonthlyCost(sizeGB: number, volumeType: string): number {
@@ -72,7 +136,7 @@ export function getEBSMonthlyCost(sizeGB: number, volumeType: string): number {
 }
 
 export function getRDSMonthlyCost(instanceClass: string): number {
-  return RDS_PRICING[instanceClass] || 0;
+  return RDS_PRICING[instanceClass] || 100;
 }
 
 export function getS3MonthlyCost(sizeGB: number, storageClass: string = 'standard'): number {
@@ -85,5 +149,5 @@ export function getELBMonthlyCost(type: 'alb' | 'nlb' | 'clb' = 'alb'): number {
 }
 
 export function getEIPMonthlyCost(): number {
-  return EIP_PRICING_HOURLY * 730; // ~$3.65
+  return EIP_PRICING_HOURLY * 730;
 }

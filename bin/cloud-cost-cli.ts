@@ -19,6 +19,7 @@ program
   .option('--output <table|json|markdown>', 'Output format', 'table')
   .option('--days <N>', 'Analysis period in days', '30')
   .option('--min-savings <amount>', 'Filter by minimum savings ($/month)')
+  .option('--accurate', 'Use real-time pricing from AWS (slower but more accurate)')
   .option('--verbose', 'Verbose logging')
   .action(scanCommand);
 

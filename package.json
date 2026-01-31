@@ -46,6 +46,7 @@
     "@aws-sdk/client-cost-explorer": "^3.712.0",
     "@aws-sdk/client-ec2": "^3.712.0",
     "@aws-sdk/client-elastic-load-balancing-v2": "^3.712.0",
+    "@aws-sdk/client-pricing": "^3.980.0",
     "@aws-sdk/client-rds": "^3.712.0",
     "@aws-sdk/client-s3": "^3.712.0",
     "@aws-sdk/credential-providers": "^3.712.0",

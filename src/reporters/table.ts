@@ -62,6 +62,11 @@ export function renderTable(report: ScanReport, topN: number = 5): void {
   );
 
   console.log(
-    `\nSummary: ${report.summary.totalResources} resources analyzed | ${report.summary.idleResources} idle | ${report.summary.oversizedResources} oversized | ${report.summary.unusedResources} unused\n`
+    `\nSummary: ${report.summary.totalResources} resources analyzed | ${report.summary.idleResources} idle | ${report.summary.oversizedResources} oversized | ${report.summary.unusedResources} unused`
   );
+
+  console.log(
+    chalk.dim(`\n💡 Note: Cost estimates based on us-east-1 pricing and may vary by region.`)
+  );
+  console.log(chalk.dim(`   For more accurate estimates, actual costs depend on your usage and region.\n`));
 }
