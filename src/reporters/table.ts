@@ -61,8 +61,11 @@ export async function renderTable(
   if (aiService && aiService.isEnabled()) {
     console.log(chalk.bold('\n🤖 AI-Powered Insights:\n'));
     
-    for (let i = 0; i < Math.min(3, opportunities.length); i++) {
-      const opp = opportunities[i];
+    const maxExplanations = aiService.getMaxExplanations();
+    const opportunitiesToExplain = opportunities.slice(0, Math.min(maxExplanations, opportunities.length));
+    
+    for (let i = 0; i < opportunitiesToExplain.length; i++) {
+      const opp = opportunitiesToExplain[i];
       try {
         console.log(chalk.cyan(`Analyzing opportunity #${i + 1}...`));
         const explanation = await aiService.explainOpportunity(opp);

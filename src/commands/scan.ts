@@ -30,6 +30,8 @@ interface ScanCommandOptions {
   verbose?: boolean;
   accurate?: boolean;
   explain?: boolean;
+  aiProvider?: string;
+  aiModel?: string;
 }
 
 export async function scanCommand(options: ScanCommandOptions) {
@@ -152,12 +154,32 @@ async function scanAWS(options: ScanCommandOptions) {
 
     // Render output
     const topN = parseInt(options.top || '5');
-    const aiService = options.explain ? new AIService(process.env.OPENAI_API_KEY) : undefined;
+    let aiService: AIService | undefined;
     
-    if (options.explain && !process.env.OPENAI_API_KEY) {
-      error('--explain requires OPENAI_API_KEY environment variable');
-      info('Set it with: export OPENAI_API_KEY="sk-..."');
-      process.exit(1);
+    if (options.explain) {
+      const provider = (options.aiProvider as 'openai' | 'ollama') || 'openai';
+      
+      if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
+        error('--explain with OpenAI requires OPENAI_API_KEY environment variable');
+        info('Set it with: export OPENAI_API_KEY="sk-..."');
+        info('Or use --ai-provider ollama for local AI (requires Ollama installed)');
+        process.exit(1);
+      }
+      
+      try {
+        aiService = new AIService({
+          provider,
+          apiKey: process.env.OPENAI_API_KEY,
+          model: options.aiModel,
+        });
+        
+        if (provider === 'ollama') {
+          info('Using local Ollama for AI explanations (privacy-first, no API costs)');
+        }
+      } catch (error: any) {
+        error(`Failed to initialize AI service: ${error.message}`);
+        process.exit(1);
+      }
     }
     
     if (options.output === 'json') {
@@ -264,12 +286,32 @@ async function scanAzure(options: ScanCommandOptions) {
 
   // Render output
   const topN = parseInt(options.top || '5');
-  const aiService = options.explain ? new AIService(process.env.OPENAI_API_KEY) : undefined;
+  let aiService: AIService | undefined;
   
-  if (options.explain && !process.env.OPENAI_API_KEY) {
-    error('--explain requires OPENAI_API_KEY environment variable');
-    info('Set it with: export OPENAI_API_KEY="sk-..."');
-    process.exit(1);
+  if (options.explain) {
+    const provider = (options.aiProvider as 'openai' | 'ollama') || 'openai';
+    
+    if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
+      error('--explain with OpenAI requires OPENAI_API_KEY environment variable');
+      info('Set it with: export OPENAI_API_KEY="sk-..."');
+      info('Or use --ai-provider ollama for local AI (requires Ollama installed)');
+      process.exit(1);
+    }
+    
+    try {
+      aiService = new AIService({
+        provider,
+        apiKey: process.env.OPENAI_API_KEY,
+        model: options.aiModel,
+      });
+      
+      if (provider === 'ollama') {
+        info('Using local Ollama for AI explanations (privacy-first, no API costs)');
+      }
+    } catch (error: any) {
+      error(`Failed to initialize AI service: ${error.message}`);
+      process.exit(1);
+    }
   }
   
   if (options.output === 'json') {

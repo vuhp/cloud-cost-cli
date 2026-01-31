@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { Ollama } from 'ollama';
 import { SavingsOpportunity } from '../types';
 
 export interface AIExplanation {
@@ -10,13 +11,47 @@ export interface AIExplanation {
   script?: string;
 }
 
-export class AIService {
-  private client: OpenAI | null = null;
-  private enabled: boolean = false;
+export type AIProvider = 'openai' | 'ollama';
 
-  constructor(apiKey?: string) {
-    if (apiKey) {
-      this.client = new OpenAI({ apiKey });
+export interface AIConfig {
+  provider: AIProvider;
+  apiKey?: string;
+  model?: string;
+  maxExplanations?: number;
+}
+
+export class AIService {
+  private openaiClient: OpenAI | null = null;
+  private ollamaClient: Ollama | null = null;
+  private provider: AIProvider;
+  private model: string = 'gpt-4o-mini';
+  private enabled: boolean = false;
+  private maxExplanations: number = 3;
+
+  constructor(config?: AIConfig) {
+    if (!config) {
+      // Try to auto-detect from environment
+      if (process.env.OPENAI_API_KEY) {
+        config = { provider: 'openai', apiKey: process.env.OPENAI_API_KEY };
+      } else {
+        // Default to ollama (local, no API key needed)
+        config = { provider: 'ollama' };
+      }
+    }
+
+    this.provider = config.provider;
+    this.maxExplanations = config.maxExplanations || 3;
+
+    if (config.provider === 'openai') {
+      if (!config.apiKey) {
+        throw new Error('OpenAI API key required');
+      }
+      this.openaiClient = new OpenAI({ apiKey: config.apiKey });
+      this.model = config.model || 'gpt-4o-mini';
+      this.enabled = true;
+    } else if (config.provider === 'ollama') {
+      this.ollamaClient = new Ollama({ host: 'http://localhost:11434' });
+      this.model = config.model || 'llama3.2:3b';
       this.enabled = true;
     }
   }
@@ -25,31 +60,56 @@ export class AIService {
     return this.enabled;
   }
 
-  async explainOpportunity(opportunity: SavingsOpportunity): Promise<AIExplanation> {
-    if (!this.client) {
-      throw new Error('AI service not configured. Set OPENAI_API_KEY environment variable.');
-    }
+  getMaxExplanations(): number {
+    return this.maxExplanations;
+  }
 
+  async explainOpportunity(opportunity: SavingsOpportunity): Promise<AIExplanation> {
     const prompt = this.buildPrompt(opportunity);
 
     try {
-      const response = await this.client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a cloud cost optimization expert. Provide clear, actionable advice for reducing cloud costs. Be concise, practical, and encouraging. Focus on real-world steps users can take immediately.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 500,
-      });
+      let content: string;
 
-      const content = response.choices[0]?.message?.content || '';
+      if (this.provider === 'openai' && this.openaiClient) {
+        const response = await this.openaiClient.chat.completions.create({
+          model: this.model,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a cloud cost optimization expert. Provide clear, actionable advice for reducing cloud costs. Be concise, practical, and encouraging. Focus on real-world steps users can take immediately. Always respond with valid JSON.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0.7,
+          max_tokens: 500,
+        });
+        content = response.choices[0]?.message?.content || '';
+      } else if (this.provider === 'ollama' && this.ollamaClient) {
+        const response = await this.ollamaClient.chat({
+          model: this.model,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a cloud cost optimization expert. Provide clear, actionable advice for reducing cloud costs. Be concise, practical, and encouraging. Focus on real-world steps users can take immediately. Always respond with valid JSON.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          options: {
+            temperature: 0.7,
+            num_predict: 500,
+          },
+        });
+        content = response.message.content;
+      } else {
+        throw new Error('No AI provider configured');
+      }
+
       return this.parseExplanation(content, opportunity);
     } catch (error: any) {
       throw new Error(`AI explanation failed: ${error.message}`);
