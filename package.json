@@ -1,6 +1,6 @@
 {
   "name": "cloud-cost-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Optimize your cloud spend in seconds",
   "main": "dist/index.js",
   "bin": {

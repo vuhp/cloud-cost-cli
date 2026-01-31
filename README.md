@@ -1,5 +1,8 @@
 # cloud-cost-cli
 
+[![npm version](https://badge.fury.io/js/cloud-cost-cli.svg)](https://www.npmjs.com/package/cloud-cost-cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **Optimize your cloud spend in seconds.**
 
 A command-line tool that analyzes your AWS, GCP, and Azure bills to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
