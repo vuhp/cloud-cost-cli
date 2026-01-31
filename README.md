@@ -30,19 +30,22 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 
 ## Features
 
-- ✅ **AWS support** (EC2, EBS, RDS, S3, ELB, Elastic IP)
-- ✅ **Azure support** (VMs, Managed Disks, Storage, SQL, Public IPs)
+- ✅ **Multi-cloud support** - AWS and Azure (GCP coming soon)
+- ✅ **AWS analyzers** - EC2, EBS, RDS, S3, ELB, Elastic IP
+- ✅ **Azure analyzers** - VMs, Managed Disks, Storage, SQL, Public IPs
 - ✅ Connect via cloud credentials (read-only recommended)
 - ✅ Analyze last 7-30 days of usage
 - ✅ Output top savings opportunities with estimated monthly savings
 - ✅ Export report as JSON or terminal table
-- ✅ Zero third-party API dependencies
+- ✅ Filter by minimum savings amount
+- ✅ Comprehensive test suite (84 tests)
 
 **Coming soon:**
 - 🔜 GCP support (Compute Engine, Cloud Storage, Cloud SQL)
-- 🔜 Slack/email alerts for cost spikes
-- 🔜 Scheduled scans (cron-friendly)
-- 🔜 Custom rules and thresholds
+- 🔜 Real-time pricing API integration
+- 🔜 Configuration file support
+- 🔜 More AWS services (Lambda, DynamoDB, CloudFront)
+- 🔜 More Azure services (App Services, CosmosDB)
 
 ---
 
@@ -137,30 +140,6 @@ Total potential savings: $1,245/month ($14,940/year)
 
 ---
 
-## Configuration
-
-Create a config file at `~/.cloud-cost-cli/config.json` (optional):
-
-```json
-{
-  "aws": {
-    "profile": "default",
-    "regions": ["us-east-1", "us-west-2"],
-    "excludeResources": ["i-0abc123", "vol-xyz"],
-    "thresholds": {
-      "idleCpuPercent": 5,
-      "minAgeDays": 7
-    }
-  },
-  "output": {
-    "format": "table",
-    "includeRecommendations": true
-  }
-}
-```
-
----
-
 ## Pricing Estimates
 
 **How cost estimates work:**
@@ -174,9 +153,9 @@ Cost savings are estimated using AWS on-demand pricing for **us-east-1** (Januar
 - ⚙️ Additional costs like data transfer and storage operations not included
 
 **For the most accurate estimates:**
-- Use the `--accurate` flag (coming in v0.2.0) to fetch real-time pricing
-- Cross-reference with your AWS Cost Explorer
+- Cross-reference with your AWS Cost Explorer or Azure Cost Management
 - Consider estimates as directional guidance, not exact amounts
+- Real-time pricing API integration coming in a future release
 
 The goal is to help you find waste quickly — even if estimates are ±20%, you'll still identify significant savings opportunities.
 
@@ -184,25 +163,27 @@ The goal is to help you find waste quickly — even if estimates are ±20%, you'
 
 ## Roadmap
 
-**Current (v0.1.x):**
-- ✅ AWS support (EC2, EBS, RDS, S3, ELB, EIP)
-- ✅ Azure support (VMs, Disks, Storage, SQL, Public IPs)
+**Current (v0.2.x):**
+- ✅ AWS support (6 services: EC2, EBS, RDS, S3, ELB, EIP)
+- ✅ Azure support (5 services: VMs, Disks, Storage, SQL, Public IPs)
 - ✅ CLI with table and JSON output
 - ✅ Read-only permissions
-- ✅ Unit tests and CI/CD
+- ✅ Comprehensive test suite (84 tests)
+- ✅ Filter by minimum savings
+- ✅ Customizable result count
 
-**Coming Soon (v0.2.x):**
+**Coming Soon (v0.3.x):**
 - 🔜 GCP support (Compute Engine, Cloud Storage, Cloud SQL)
-- 🔜 Real-time pricing with `--accurate` flag
+- 🔜 Real-time pricing API integration
+- 🔜 Configuration file support (~/.cloud-cost-cli/config.json)
 - 🔜 More AWS services (Lambda, DynamoDB, CloudFront)
 - 🔜 More Azure services (App Services, CosmosDB)
-- 🔜 Historical cost tracking
-- 🔜 Scheduled scans and notifications
 
 **Future:**
-- Multi-cloud support across AWS, GCP, Azure
+- Multi-region analysis
+- Historical cost tracking
+- Scheduled scans and notifications
 - CI/CD integration examples
-- Web dashboard for teams
 - Custom analyzer rules
 
 See [GitHub Issues](https://github.com/vuhp/cloud-cost-cli/issues) for planned features and vote on what you'd like to see next!
