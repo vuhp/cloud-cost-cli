@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "description": "Optimize your cloud spend in seconds",
   "main": "dist/index.js",
-  "type": "module",
   "bin": {
     "cloud-cost-cli": "dist/bin/cloud-cost-cli.js"
   },
@@ -14,8 +13,22 @@
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts"
   },
-  "keywords": ["cloud", "aws", "cost", "optimization", "cli", "finops"],
-  "author": "Phuong Vu",
+  "keywords": ["cloud", "aws", "cost", "optimization", "cli", "finops", "cost-optimization", "aws-cli", "devops", "cloud-cost"],
+  "author": "Phuong Vu <vuhuuphuong@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vuhp/cloud-cost-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vuhp/cloud-cost-cli/issues"
+  },
+  "homepage": "https://github.com/vuhp/cloud-cost-cli#readme",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "docs"
+  ],
   "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.712.0",
