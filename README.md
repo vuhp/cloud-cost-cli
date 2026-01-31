@@ -5,7 +5,7 @@
 
 **Optimize your cloud spend in seconds.**
 
-A command-line tool that analyzes your AWS, GCP, and Azure bills to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
+A command-line tool that analyzes your AWS and Azure resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
 ---
 
@@ -18,9 +18,9 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 `cloud-cost-cli` connects to your cloud accounts, analyzes resource usage and billing data, and outputs a ranked list of actionable savings opportunities — all in your terminal, in under 60 seconds.
 
 **What it finds:**
-- Idle VMs/EC2/Compute instances (low CPU, stopped but still billed)
+- Idle VMs/EC2 instances (low CPU, stopped but still billed)
 - Unattached volumes, disks, and snapshots
-- Oversized database instances (RDS, SQL, Cloud SQL)
+- Oversized database instances (RDS, Azure SQL)
 - Old load balancers with no traffic
 - Unused public IP addresses
 - Underutilized resources that can be downsized
@@ -60,22 +60,14 @@ No commitment on timeline - contributions welcome!
 ## Installation
 
 **Requirements:**
-- Node.js >= 18 (or use the standalone binary)
-- AWS credentials configured (see [AWS CLI setup](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html))
+- Node.js >= 18
+- Cloud credentials:
+  - **AWS**: [AWS CLI configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) or environment variables
+  - **Azure**: [Azure CLI logged in](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) or environment variables
 
 **Install via npm:**
 ```bash
 npm install -g cloud-cost-cli
-```
-
-**Or download standalone binary:**
-```bash
-# macOS/Linux
-curl -L https://github.com/vuhp/cloud-cost-cli/releases/latest/download/cloud-cost-cli-$(uname -s)-$(uname -m) -o /usr/local/bin/cloud-cost-cli
-chmod +x /usr/local/bin/cloud-cost-cli
-
-# Windows (PowerShell)
-Invoke-WebRequest -Uri "https://github.com/vuhp/cloud-cost-cli/releases/latest/download/cloud-cost-cli-windows-x64.exe" -OutFile "$env:USERPROFILE\bin\cloud-cost-cli.exe"
 ```
 
 ---
@@ -190,11 +182,9 @@ npm run test:ui       # Interactive UI
 
 **Development workflow:**
 ```bash
-npm run dev -- scan --profile your-profile  # Test locally
-npm run build                               # Compile TypeScript
+npm run dev -- scan --provider aws --profile your-profile  # Test locally
+npm run build                                              # Compile TypeScript
 ```
-
-See [Contributing Guide](docs/contributing.md) for more details.
 
 ---
 
@@ -230,16 +220,18 @@ MIT License - see [LICENSE](LICENSE)
 ## FAQ
 
 **Q: Does this tool make changes to my infrastructure?**  
-A: No. It only reads billing and usage data. It never modifies or deletes resources.
+A: No. It only reads resource metadata and usage metrics. It never modifies or deletes resources.
 
-**Q: What IAM permissions are required?**  
-A: Read-only permissions for Cost Explorer, EC2, EBS, RDS, S3, ELB. See [IAM policy template](docs/iam-policy.json).
+**Q: What permissions are required?**  
+A: Read-only permissions for each cloud provider:
+- **AWS**: EC2, EBS, RDS, S3, ELB, CloudWatch (see [AWS permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html))
+- **Azure**: Reader role on subscription or resource groups
 
 **Q: How accurate are the savings estimates?**  
-A: Estimates are based on current pricing and usage patterns. Actual savings may vary.
+A: Estimates are based on current pricing and usage patterns. Actual savings may vary by region and your specific pricing agreements (Reserved Instances, Savings Plans, etc.).
 
 **Q: Can I run this in CI/CD?**  
-A: Yes. Use `--output json` and fail the build if savings exceed a threshold.
+A: Yes. Use `--output json` and parse the results to fail builds if savings exceed a threshold.
 
 ---
 
