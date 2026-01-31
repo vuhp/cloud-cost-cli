@@ -203,13 +203,23 @@ Contributions welcome! Please open an issue before submitting large PRs.
 git clone https://github.com/vuhp/cloud-cost-cli.git
 cd cloud-cost-cli
 npm install
-npm run dev
+npm run build
 ```
 
 **Run tests:**
 ```bash
-npm test
+npm test              # Run all tests
+npm run test:coverage # Run with coverage report
+npm run test:ui       # Interactive UI
 ```
+
+**Development workflow:**
+```bash
+npm run dev -- scan --profile your-profile  # Test locally
+npm run build                               # Compile TypeScript
+```
+
+See [Contributing Guide](docs/contributing.md) for more details.
 
 ---
 

@@ -10,6 +10,8 @@
     "dev": "tsx bin/cloud-cost-cli.ts",
     "build": "tsc",
     "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts"
   },
@@ -61,10 +63,11 @@
     "@types/node": "^22.10.5",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
     "@typescript-eslint/parser": "^8.19.1",
+    "@vitest/ui": "^1.6.1",
     "eslint": "^8.57.1",
     "prettier": "^3.4.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
-    "vitest": "^1.6.0"
+    "vitest": "^1.6.1"
   }
 }
