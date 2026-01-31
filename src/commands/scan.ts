@@ -1,6 +1,10 @@
 import { AWSClient } from '../providers/aws/client';
 import { analyzeEC2Instances } from '../providers/aws/ec2';
 import { analyzeEBSVolumes } from '../providers/aws/ebs';
+import { analyzeRDSInstances } from '../providers/aws/rds';
+import { analyzeS3Buckets } from '../providers/aws/s3';
+import { analyzeELBs } from '../providers/aws/elb';
+import { analyzeElasticIPs } from '../providers/aws/eip';
 import { ScanReport, SavingsOpportunity } from '../types/opportunity';
 import { renderTable } from '../reporters/table';
 import { renderJSON } from '../reporters/json';
@@ -31,19 +35,57 @@ export async function scanCommand(options: ScanCommandOptions) {
       profile: options.profile,
     });
 
-    // Run analyzers
+    // Run analyzers in parallel
     info('Analyzing EC2 instances...');
-    const ec2Opportunities = await analyzeEC2Instances(client);
-    success(`Found ${ec2Opportunities.length} EC2 opportunities`);
+    const ec2Promise = analyzeEC2Instances(client);
 
     info('Analyzing EBS volumes...');
-    const ebsOpportunities = await analyzeEBSVolumes(client);
+    const ebsPromise = analyzeEBSVolumes(client);
+
+    info('Analyzing RDS instances...');
+    const rdsPromise = analyzeRDSInstances(client);
+
+    info('Analyzing S3 buckets...');
+    const s3Promise = analyzeS3Buckets(client);
+
+    info('Analyzing Load Balancers...');
+    const elbPromise = analyzeELBs(client);
+
+    info('Analyzing Elastic IPs...');
+    const eipPromise = analyzeElasticIPs(client);
+
+    // Wait for all analyzers to complete
+    const [
+      ec2Opportunities,
+      ebsOpportunities,
+      rdsOpportunities,
+      s3Opportunities,
+      elbOpportunities,
+      eipOpportunities,
+    ] = await Promise.all([
+      ec2Promise,
+      ebsPromise,
+      rdsPromise,
+      s3Promise,
+      elbPromise,
+      eipPromise,
+    ]);
+
+    success(`Found ${ec2Opportunities.length} EC2 opportunities`);
     success(`Found ${ebsOpportunities.length} EBS opportunities`);
+    success(`Found ${rdsOpportunities.length} RDS opportunities`);
+    success(`Found ${s3Opportunities.length} S3 opportunities`);
+    success(`Found ${elbOpportunities.length} ELB opportunities`);
+    success(`Found ${eipOpportunities.length} EIP opportunities`);
 
     // Combine opportunities
     const allOpportunities: SavingsOpportunity[] = [
       ...ec2Opportunities,
       ...ebsOpportunities,
+      ...rdsOpportunities,
+      ...s3Opportunities,
+      ...elbOpportunities,
+      ...eipOpportunities,
     ];
 
     // Filter by minimum savings if specified
