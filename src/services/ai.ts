@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { Ollama } from 'ollama';
 import { SavingsOpportunity } from '../types';
+import { ScriptGenerator } from './script-generator';
 
 export interface AIExplanation {
   summary: string;
@@ -114,6 +115,17 @@ export class AIService {
     } catch (error: any) {
       throw new Error(`AI explanation failed: ${error.message}`);
     }
+  }
+
+  async generateRemediationScript(opportunity: SavingsOpportunity): Promise<string | null> {
+    const generator = new ScriptGenerator();
+    const script = generator.generateRemediation(opportunity);
+    
+    if (!script) {
+      return null;
+    }
+    
+    return generator.renderScript(script);
   }
 
   private buildPrompt(opportunity: SavingsOpportunity): string {

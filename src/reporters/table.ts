@@ -88,6 +88,20 @@ export async function renderTable(
         console.log();
         console.log(`Risk: ${getRiskEmoji(explanation.riskLevel)} ${explanation.riskLevel.toUpperCase()}`);
         console.log(`Time: ⏱️  ${explanation.estimatedTime}`);
+        
+        // Try to generate remediation script
+        try {
+          const script = await aiService.generateRemediationScript(opp);
+          if (script) {
+            console.log();
+            console.log(chalk.bold('🔧 Remediation Script:'));
+            console.log(chalk.dim('─'.repeat(80)));
+            console.log(chalk.gray(script));
+          }
+        } catch (error: any) {
+          // Script generation failed, skip silently
+        }
+        
         console.log();
       } catch (error: any) {
         console.log(chalk.yellow(`⚠️  AI explanation failed: ${error.message}`));
