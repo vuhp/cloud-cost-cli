@@ -4,31 +4,20 @@ This document describes how to publish a new version of cloud-cost-cli.
 
 ## Prerequisites
 
-### 1. NPM Granular Access Token
+### npm Trusted Publishing (OIDC)
 
-npm now uses "Granular Access Tokens" instead of automation tokens.
+This project uses **npm trusted publishing** via GitHub Actions. No npm token is required!
 
-**Create the token:**
-1. Go to https://www.npmjs.com/settings/YOUR_USERNAME/tokens
-2. Click **"Generate New Token"** → **"Granular Access Token"**
-3. Configure the token:
-   - **Token name**: `cloud-cost-cli-publish` (or any name)
-   - **Expiration**: 1 year (or No expiration)
-   - **Packages and scopes**: Select packages → Choose `cloud-cost-cli`
-   - **Permissions**: Read and write
-   - **⚠️ IMPORTANT**: Under "Additional options" → **Disable "Require two-factor authentication for this token"**
-     - This allows GitHub Actions to publish without OTP
-     - The token itself is still secure (stored in GitHub Secrets)
-4. Click **"Generate Token"**
-5. Copy the token (starts with `npm_...`)
+**Configuration:**
+- Already configured on npm for this package
+- GitHub Actions is set as a trusted publisher
+- Publishing happens automatically via OIDC (OpenID Connect)
 
-### 2. Add Token to GitHub Secrets
-
-1. Go to https://github.com/vuhp/cloud-cost-cli/settings/secrets/actions
-2. Click **"New repository secret"** (or edit existing `NPM_TOKEN`)
-3. Name: `NPM_TOKEN`
-4. Value: (paste the `npm_...` token with 2FA disabled)
-5. Click **"Add secret"** or **"Update secret"**
+**Benefits:**
+- ✅ No tokens to rotate or secure
+- ✅ No 2FA required for automation
+- ✅ More secure (GitHub's identity proves authenticity)
+- ✅ Automatic provenance statements
 
 ## Steps to Release
 
