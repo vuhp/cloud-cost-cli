@@ -18,32 +18,31 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 `cloud-cost-cli` connects to your cloud accounts, analyzes resource usage and billing data, and outputs a ranked list of actionable savings opportunities — all in your terminal, in under 60 seconds.
 
 **What it finds:**
-- Idle EC2/Compute instances (low CPU, stopped but still billed)
-- Unattached EBS volumes and snapshots
-- Oversized RDS/database instances
+- Idle VMs/EC2/Compute instances (low CPU, stopped but still billed)
+- Unattached volumes, disks, and snapshots
+- Oversized database instances (RDS, SQL, Cloud SQL)
 - Old load balancers with no traffic
-- Unused Elastic IPs
-- Underutilized reserved instances or savings plan mismatches
-- Redundant S3 storage (lifecycle policies missing)
+- Unused public IP addresses
+- Underutilized resources that can be downsized
+- Storage without lifecycle policies
 
 ---
 
-## Features (MVP - Week 1–2)
+## Features
 
-- ✅ AWS support (EC2, EBS, RDS, S3, ELB, Elastic IP)
-- ✅ Connect via AWS credentials (IAM read-only recommended)
-- ✅ Analyze last 30 days of usage
-- ✅ Output top 5 savings opportunities with estimated monthly savings
-- ✅ Export report as JSON, Markdown, or terminal table
-- ✅ Zero third-party API dependencies (uses AWS SDK directly)
+- ✅ **AWS support** (EC2, EBS, RDS, S3, ELB, Elastic IP)
+- ✅ **Azure support** (VMs, Managed Disks, Storage, SQL, Public IPs)
+- ✅ Connect via cloud credentials (read-only recommended)
+- ✅ Analyze last 7-30 days of usage
+- ✅ Output top savings opportunities with estimated monthly savings
+- ✅ Export report as JSON or terminal table
+- ✅ Zero third-party API dependencies
 
 **Coming soon:**
-- GCP and Azure support
-- Slack/email alerts for new cost spikes
-- Scheduled reports (cron-friendly)
-- Team dashboard (web UI, SaaS)
-- Custom rules and thresholds
-- Terraform/IaC integration (flag risky configs before apply)
+- 🔜 GCP support (Compute Engine, Cloud Storage, Cloud SQL)
+- 🔜 Slack/email alerts for cost spikes
+- 🔜 Scheduled scans (cron-friendly)
+- 🔜 Custom rules and thresholds
 
 ---
 
@@ -72,19 +71,27 @@ Invoke-WebRequest -Uri "https://github.com/vuhp/cloud-cost-cli/releases/latest/d
 
 ## Usage
 
-**Basic scan (AWS):**
+**AWS scan:**
 ```bash
-cloud-cost-cli scan --provider aws --profile default
+cloud-cost-cli scan --provider aws --profile default --region us-east-1
 ```
 
-**Specify region and output format:**
+**Azure scan:**
 ```bash
-cloud-cost-cli scan --provider aws --region us-east-1 --output json > report.json
+# Set Azure subscription ID (or use --subscription-id flag)
+export AZURE_SUBSCRIPTION_ID="your-subscription-id"
+
+cloud-cost-cli scan --provider azure --location eastus
 ```
 
-**Top N opportunities:**
+**Specify output format:**
 ```bash
-cloud-cost-cli scan --provider aws --top 10
+cloud-cost-cli scan --provider aws --output json > report.json
+```
+
+**Filter by minimum savings:**
+```bash
+cloud-cost-cli scan --provider azure --min-savings 50  # Only show opportunities > $50/month
 ```
 
 **Example output:**
@@ -174,13 +181,16 @@ The goal is to help you find waste quickly — even if estimates are ±20%, you'
 
 **Current (v0.1.x):**
 - ✅ AWS support (EC2, EBS, RDS, S3, ELB, EIP)
+- ✅ Azure support (VMs, Disks, Storage, SQL, Public IPs)
 - ✅ CLI with table and JSON output
-- ✅ Read-only IAM permissions
+- ✅ Read-only permissions
+- ✅ Unit tests and CI/CD
 
-**Coming Soon:**
+**Coming Soon (v0.2.x):**
 - 🔜 GCP support (Compute Engine, Cloud Storage, Cloud SQL)
-- 🔜 Azure support (VMs, Storage, Databases)
+- 🔜 Real-time pricing with `--accurate` flag
 - 🔜 More AWS services (Lambda, DynamoDB, CloudFront)
+- 🔜 More Azure services (App Services, CosmosDB)
 - 🔜 Historical cost tracking
 - 🔜 Scheduled scans and notifications
 

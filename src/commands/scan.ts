@@ -5,6 +5,12 @@ import { analyzeRDSInstances } from '../providers/aws/rds';
 import { analyzeS3Buckets } from '../providers/aws/s3';
 import { analyzeELBs } from '../providers/aws/elb';
 import { analyzeElasticIPs } from '../providers/aws/eip';
+import { AzureClient } from '../providers/azure/client';
+import { analyzeAzureVMs } from '../providers/azure/vms';
+import { analyzeAzureDisks } from '../providers/azure/disks';
+import { analyzeAzureStorage } from '../providers/azure/storage';
+import { analyzeAzureSQL } from '../providers/azure/sql';
+import { analyzeAzurePublicIPs } from '../providers/azure/public-ips';
 import { ScanReport, SavingsOpportunity } from '../types/opportunity';
 import { renderTable } from '../reporters/table';
 import { renderJSON } from '../reporters/json';
@@ -14,20 +20,36 @@ interface ScanCommandOptions {
   provider: string;
   region?: string;
   profile?: string;
+  subscriptionId?: string;
+  location?: string;
   top?: string;
   output?: string;
   days?: string;
   minSavings?: string;
   verbose?: boolean;
-  accurate?: boolean; // Use real-time pricing from AWS Pricing API
+  accurate?: boolean;
 }
 
 export async function scanCommand(options: ScanCommandOptions) {
   try {
-    if (options.provider !== 'aws') {
-      error(`Provider "${options.provider}" not yet supported. Use --provider aws`);
+    if (options.provider === 'aws') {
+      await scanAWS(options);
+    } else if (options.provider === 'azure') {
+      await scanAzure(options);
+    } else {
+      error(`Provider "${options.provider}" not yet supported. Use --provider aws or --provider azure`);
       process.exit(1);
     }
+  } catch (err: any) {
+    error(`Scan failed: ${err.message}`);
+    if (options.verbose) {
+      console.error(err);
+    }
+    process.exit(1);
+  }
+}
+
+async function scanAWS(options: ScanCommandOptions) {
 
     const client = new AWSClient({
       region: options.region,
@@ -133,21 +155,103 @@ export async function scanCommand(options: ScanCommandOptions) {
     } else {
       renderTable(report, topN);
     }
+}
 
-  } catch (err: any) {
-    if (err.name === 'CredentialsProviderError' || err.message?.includes('credentials')) {
-      error('AWS credentials not found or invalid.');
-      console.log('\nTo configure AWS credentials:');
-      console.log('1. Run: aws configure');
-      console.log('2. Or set environment variables: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY');
-      console.log('3. Or use --profile flag with a configured profile');
-      console.log('\nSee: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html');
-    } else {
-      error(`Scan failed: ${err.message}`);
-      if (options.verbose) {
-        console.error(err);
-      }
-    }
-    process.exit(1);
+async function scanAzure(options: ScanCommandOptions) {
+  const client = new AzureClient({
+    subscriptionId: options.subscriptionId,
+    location: options.location,
+  });
+
+  info(`Scanning Azure subscription (${client.subscriptionId}, location: ${client.location})...`);
+  
+  if (options.accurate) {
+    info('Note: --accurate flag is not yet implemented. Using estimated pricing.');
+  }
+
+  // Run analyzers in parallel
+  info('Analyzing Virtual Machines...');
+  const vmPromise = analyzeAzureVMs(client);
+
+  info('Analyzing Managed Disks...');
+  const diskPromise = analyzeAzureDisks(client);
+
+  info('Analyzing Storage Accounts...');
+  const storagePromise = analyzeAzureStorage(client);
+
+  info('Analyzing SQL Databases...');
+  const sqlPromise = analyzeAzureSQL(client);
+
+  info('Analyzing Public IP Addresses...');
+  const ipPromise = analyzeAzurePublicIPs(client);
+
+  // Wait for all analyzers to complete
+  const [
+    vmOpportunities,
+    diskOpportunities,
+    storageOpportunities,
+    sqlOpportunities,
+    ipOpportunities,
+  ] = await Promise.all([
+    vmPromise,
+    diskPromise,
+    storagePromise,
+    sqlPromise,
+    ipPromise,
+  ]);
+
+  success(`Found ${vmOpportunities.length} VM opportunities`);
+  success(`Found ${diskOpportunities.length} Disk opportunities`);
+  success(`Found ${storageOpportunities.length} Storage opportunities`);
+  success(`Found ${sqlOpportunities.length} SQL opportunities`);
+  success(`Found ${ipOpportunities.length} Public IP opportunities`);
+
+  // Combine opportunities
+  const allOpportunities: SavingsOpportunity[] = [
+    ...vmOpportunities,
+    ...diskOpportunities,
+    ...storageOpportunities,
+    ...sqlOpportunities,
+    ...ipOpportunities,
+  ];
+
+  // Filter by minimum savings if specified
+  const minSavings = options.minSavings ? parseFloat(options.minSavings) : 0;
+  const filteredOpportunities = allOpportunities.filter(
+    (opp) => opp.estimatedSavings >= minSavings
+  );
+
+  // Calculate totals
+  const totalPotentialSavings = filteredOpportunities.reduce(
+    (sum, opp) => sum + opp.estimatedSavings,
+    0
+  );
+
+  const summary = {
+    totalResources: filteredOpportunities.length,
+    idleResources: filteredOpportunities.filter((o) => o.category === 'idle').length,
+    oversizedResources: filteredOpportunities.filter((o) => o.category === 'oversized').length,
+    unusedResources: filteredOpportunities.filter((o) => o.category === 'unused').length,
+  };
+
+  const report: ScanReport = {
+    provider: 'azure',
+    accountId: client.subscriptionId,
+    region: client.location,
+    scanPeriod: {
+      start: new Date(Date.now() - (parseInt(options.days || '7') * 24 * 60 * 60 * 1000)),
+      end: new Date(),
+    },
+    opportunities: filteredOpportunities,
+    totalPotentialSavings,
+    summary,
+  };
+
+  // Render output
+  const topN = parseInt(options.top || '5');
+  if (options.output === 'json') {
+    renderJSON(report);
+  } else {
+    renderTable(report, topN);
   }
 }

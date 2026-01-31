@@ -12,9 +12,11 @@ program
 program
   .command('scan')
   .description('Scan cloud account for cost savings')
-  .option('--provider <aws|gcp|azure>', 'Cloud provider', 'aws')
-  .option('--region <region>', 'Cloud region (e.g., us-east-1)')
+  .option('--provider <aws|azure>', 'Cloud provider', 'aws')
+  .option('--region <region>', 'AWS region (e.g., us-east-1)')
   .option('--profile <profile>', 'AWS profile name', 'default')
+  .option('--subscription-id <id>', 'Azure subscription ID')
+  .option('--location <location>', 'Azure location (e.g., eastus)', 'eastus')
   .option('--top <N>', 'Show top N opportunities', '5')
   .option('--output <table|json|markdown>', 'Output format', 'table')
   .option('--days <N>', 'Analysis period in days', '30')
