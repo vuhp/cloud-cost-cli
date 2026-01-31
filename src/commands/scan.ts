@@ -28,12 +28,12 @@ export async function scanCommand(options: ScanCommandOptions) {
       process.exit(1);
     }
 
-    info(`Scanning AWS account (profile: ${options.profile || 'default'}, region: ${options.region || 'us-east-1'})...`);
-
     const client = new AWSClient({
       region: options.region,
       profile: options.profile,
     });
+
+    info(`Scanning AWS account (profile: ${options.profile || 'default'}, region: ${client.region})...`);
 
     // Run analyzers in parallel
     info('Analyzing EC2 instances...');

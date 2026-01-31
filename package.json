@@ -13,7 +13,18 @@
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts"
   },
-  "keywords": ["cloud", "aws", "cost", "optimization", "cli", "finops", "cost-optimization", "aws-cli", "devops", "cloud-cost"],
+  "keywords": [
+    "cloud",
+    "aws",
+    "cost",
+    "optimization",
+    "cli",
+    "finops",
+    "cost-optimization",
+    "aws-cli",
+    "devops",
+    "cloud-cost"
+  ],
   "author": "Phuong Vu <vuhuuphuong@gmail.com>",
   "repository": {
     "type": "git",
@@ -41,9 +52,11 @@
     "chalk": "^5.3.0",
     "cli-table3": "^0.6.5",
     "commander": "^12.1.0",
-    "dayjs": "^1.11.13"
+    "dayjs": "^1.11.13",
+    "ini": "^6.0.0"
   },
   "devDependencies": {
+    "@types/ini": "^4.1.1",
     "@types/node": "^22.10.5",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
     "@typescript-eslint/parser": "^8.19.1",
