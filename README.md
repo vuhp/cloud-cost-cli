@@ -151,24 +151,25 @@ Create a config file at `~/.cloud-cost-cli/config.json` (optional):
 
 ## Roadmap
 
-**Phase 1 (Week 1–2): MVP**
-- AWS support (EC2, EBS, RDS, S3, ELB, EIP)
-- CLI with basic scan and reporting
-- GitHub Sponsors setup
-- Launch on Hacker News, Product Hunt, Reddit
+**Current (v0.1.x):**
+- ✅ AWS support (EC2, EBS, RDS, S3, ELB, EIP)
+- ✅ CLI with table and JSON output
+- ✅ Read-only IAM permissions
 
-**Phase 2 (Month 2):**
-- GCP support
-- Azure support
-- Scheduled reports (cron mode)
-- Slack webhook integration
-- GitHub Sponsors perks (early access, priority support)
+**Coming Soon:**
+- 🔜 GCP support (Compute Engine, Cloud Storage, Cloud SQL)
+- 🔜 Azure support (VMs, Storage, Databases)
+- 🔜 More AWS services (Lambda, DynamoDB, CloudFront)
+- 🔜 Historical cost tracking
+- 🔜 Scheduled scans and notifications
 
-**Phase 3 (Month 3+):**
-- SaaS version: connect account, weekly email reports, team dashboard
-- Paid tiers: $29/mo (alerts + history), $99/mo (multi-account + API)
-- Enterprise: on-prem, SSO, audit logs, custom rules
-- Terraform provider (flag cost risks before apply)
+**Future:**
+- Multi-cloud support across AWS, GCP, Azure
+- CI/CD integration examples
+- Web dashboard for teams
+- Custom analyzer rules
+
+See [GitHub Issues](https://github.com/vuhp/cloud-cost-cli/issues) for planned features and vote on what you'd like to see next!
 
 ---
 
@@ -191,15 +192,15 @@ npm test
 
 ---
 
-## Sponsorship
+## Support This Project
 
-If this tool saves you money, consider sponsoring development via [GitHub Sponsors](https://github.com/sponsors/vuhp).
+If cloud-cost-cli helps you save money, consider [sponsoring on GitHub](https://github.com/sponsors/vuhp).
 
-**Sponsor tiers:**
-- ☕ $5/mo: Thank you!
-- 🚀 $25/mo: Early access to new features + priority support
-- 💼 $100/mo: Logo on README + monthly 1:1 consultation (30 min)
-- 🏢 $500/mo: Custom rule development + dedicated Slack channel
+Your support helps fund:
+- 🚀 New cloud provider integrations
+- 🐛 Bug fixes and maintenance
+- 📚 Better documentation
+- ✨ Community feature requests
 
 ---
 
