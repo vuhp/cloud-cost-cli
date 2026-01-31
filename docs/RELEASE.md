@@ -16,16 +16,19 @@ npm now uses "Granular Access Tokens" instead of automation tokens.
    - **Expiration**: 1 year (or No expiration)
    - **Packages and scopes**: Select packages → Choose `cloud-cost-cli`
    - **Permissions**: Read and write
+   - **⚠️ IMPORTANT**: Under "Additional options" → **Disable "Require two-factor authentication for this token"**
+     - This allows GitHub Actions to publish without OTP
+     - The token itself is still secure (stored in GitHub Secrets)
 4. Click **"Generate Token"**
 5. Copy the token (starts with `npm_...`)
 
 ### 2. Add Token to GitHub Secrets
 
 1. Go to https://github.com/vuhp/cloud-cost-cli/settings/secrets/actions
-2. Click **"New repository secret"**
+2. Click **"New repository secret"** (or edit existing `NPM_TOKEN`)
 3. Name: `NPM_TOKEN`
-4. Value: (paste the `npm_...` token)
-5. Click **"Add secret"**
+4. Value: (paste the `npm_...` token with 2FA disabled)
+5. Click **"Add secret"** or **"Update secret"**
 
 ## Steps to Release
 
