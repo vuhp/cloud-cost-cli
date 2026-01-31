@@ -1,4 +1,4 @@
-import { ScanReport } from './opportunity.js';
+import { ScanReport } from './opportunity';
 
 export interface CloudProvider {
   name: string;

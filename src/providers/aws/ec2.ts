@@ -6,9 +6,9 @@ import {
   GetMetricStatisticsCommand,
   Statistic,
 } from '@aws-sdk/client-cloudwatch';
-import { AWSClient } from './client.js';
-import { SavingsOpportunity } from '../../types/opportunity.js';
-import { getEC2MonthlyCost } from '../../analyzers/cost-estimator.js';
+import { AWSClient } from './client';
+import { SavingsOpportunity } from '../../types/opportunity';
+import { getEC2MonthlyCost } from '../../analyzers/cost-estimator';
 import dayjs from 'dayjs';
 
 export async function analyzeEC2Instances(
@@ -92,7 +92,7 @@ async function getAvgCPU(
     }
 
     const avg =
-      result.Datapoints.reduce((sum, dp) => sum + (dp.Average || 0), 0) /
+      result.Datapoints.reduce((sum: number, dp: any) => sum + (dp.Average || 0), 0) /
       result.Datapoints.length;
     return avg;
   } catch (error) {

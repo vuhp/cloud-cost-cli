@@ -1,10 +1,10 @@
-import { AWSClient } from '../providers/aws/client.js';
-import { analyzeEC2Instances } from '../providers/aws/ec2.js';
-import { analyzeEBSVolumes } from '../providers/aws/ebs.js';
-import { ScanReport, SavingsOpportunity } from '../types/opportunity.js';
-import { renderTable } from '../reporters/table.js';
-import { renderJSON } from '../reporters/json.js';
-import { error, info, success } from '../utils/logger.js';
+import { AWSClient } from '../providers/aws/client';
+import { analyzeEC2Instances } from '../providers/aws/ec2';
+import { analyzeEBSVolumes } from '../providers/aws/ebs';
+import { ScanReport, SavingsOpportunity } from '../types/opportunity';
+import { renderTable } from '../reporters/table';
+import { renderJSON } from '../reporters/json';
+import { error, info, success } from '../utils/logger';
 
 interface ScanCommandOptions {
   provider: string;

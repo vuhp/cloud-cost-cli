@@ -1,8 +1,8 @@
 import { DescribeVolumesCommand, Volume } from '@aws-sdk/client-ec2';
-import { AWSClient } from './client.js';
-import { SavingsOpportunity } from '../../types/opportunity.js';
-import { getEBSMonthlyCost } from '../../analyzers/cost-estimator.js';
-import { daysSince } from '../../utils/formatter.js';
+import { AWSClient } from './client';
+import { SavingsOpportunity } from '../../types/opportunity';
+import { getEBSMonthlyCost } from '../../analyzers/cost-estimator';
+import { daysSince } from '../../utils/formatter';
 
 export async function analyzeEBSVolumes(
   client: AWSClient

@@ -1,7 +1,7 @@
-import { ScanReport } from '../../types/opportunity.js';
+import { SavingsOpportunity, ScanReport } from '../types';
 import Table from 'cli-table3';
 import chalk from 'chalk';
-import { formatCurrency } from '../../utils/formatter.js';
+import { formatCurrency } from '../utils';
 
 export function renderTable(report: ScanReport, topN: number = 5): void {
   console.log(chalk.bold('\nCloud Cost Optimization Report'));
@@ -15,7 +15,7 @@ export function renderTable(report: ScanReport, topN: number = 5): void {
   );
 
   const opportunities = report.opportunities
-    .sort((a, b) => b.estimatedSavings - a.estimatedSavings)
+    .sort((a: SavingsOpportunity, b: SavingsOpportunity) => b.estimatedSavings - a.estimatedSavings)
     .slice(0, topN);
 
   if (opportunities.length === 0) {
@@ -39,7 +39,7 @@ export function renderTable(report: ScanReport, topN: number = 5): void {
     },
   });
 
-  opportunities.forEach((opp, index) => {
+  opportunities.forEach((opp: SavingsOpportunity, index: number) => {
     table.push([
       (index + 1).toString(),
       opp.resourceType.toUpperCase(),
