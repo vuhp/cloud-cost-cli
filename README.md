@@ -30,7 +30,8 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 
 ## Features
 
-- ✅ **Multi-cloud support** - AWS and Azure (GCP coming soon)
+**Current capabilities:**
+- ✅ **Multi-cloud support** - AWS and Azure
 - ✅ **AWS analyzers** - EC2, EBS, RDS, S3, ELB, Elastic IP
 - ✅ **Azure analyzers** - VMs, Managed Disks, Storage, SQL, Public IPs
 - ✅ Connect via cloud credentials (read-only recommended)
@@ -40,12 +41,19 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ Filter by minimum savings amount
 - ✅ Comprehensive test suite (84 tests)
 
-**Coming soon:**
-- 🔜 GCP support (Compute Engine, Cloud Storage, Cloud SQL)
-- 🔜 Real-time pricing API integration
-- 🔜 Configuration file support
-- 🔜 More AWS services (Lambda, DynamoDB, CloudFront)
-- 🔜 More Azure services (App Services, CosmosDB)
+**Potential future additions:**
+- GCP support (Compute Engine, Cloud Storage, Cloud SQL)
+- Real-time pricing API integration
+- Configuration file support
+- Additional AWS services (Lambda, DynamoDB, CloudFront, etc.)
+- Additional Azure services (App Services, CosmosDB, etc.)
+- Multi-region analysis
+- Historical cost tracking
+- Scheduled scans and notifications
+- CI/CD integration examples
+- Custom analyzer rules
+
+No commitment on timeline - contributions welcome!
 
 ---
 
@@ -161,35 +169,6 @@ The goal is to help you find waste quickly — even if estimates are ±20%, you'
 
 ---
 
-## Roadmap
-
-**Current (v0.2.x):**
-- ✅ AWS support (6 services: EC2, EBS, RDS, S3, ELB, EIP)
-- ✅ Azure support (5 services: VMs, Disks, Storage, SQL, Public IPs)
-- ✅ CLI with table and JSON output
-- ✅ Read-only permissions
-- ✅ Comprehensive test suite (84 tests)
-- ✅ Filter by minimum savings
-- ✅ Customizable result count
-
-**Coming Soon (v0.3.x):**
-- 🔜 GCP support (Compute Engine, Cloud Storage, Cloud SQL)
-- 🔜 Real-time pricing API integration
-- 🔜 Configuration file support (~/.cloud-cost-cli/config.json)
-- 🔜 More AWS services (Lambda, DynamoDB, CloudFront)
-- 🔜 More Azure services (App Services, CosmosDB)
-
-**Future:**
-- Multi-region analysis
-- Historical cost tracking
-- Scheduled scans and notifications
-- CI/CD integration examples
-- Custom analyzer rules
-
-See [GitHub Issues](https://github.com/vuhp/cloud-cost-cli/issues) for planned features and vote on what you'd like to see next!
-
----
-
 ## Contributing
 
 Contributions welcome! Please open an issue before submitting large PRs.
@@ -240,10 +219,20 @@ MIT License - see [LICENSE](LICENSE)
 ## Credits
 
 **Powered by:**
-- AWS SDK for JavaScript
-- Commander.js
-- Chalk (terminal colors)
-- Table (terminal tables)
+- [@azure/arm-compute](https://www.npmjs.com/package/@azure/arm-compute) - Azure Virtual Machines API
+- [@azure/arm-compute-rest](https://www.npmjs.com/package/@azure/arm-compute-rest) - Azure Disks API
+- [@azure/arm-sql](https://www.npmjs.com/package/@azure/arm-sql) - Azure SQL Database API
+- [@azure/arm-storage](https://www.npmjs.com/package/@azure/arm-storage) - Azure Storage API
+- [@azure/arm-network](https://www.npmjs.com/package/@azure/arm-network) - Azure Public IPs API
+- [@azure/identity](https://www.npmjs.com/package/@azure/identity) - Azure authentication
+- [@aws-sdk/client-ec2](https://www.npmjs.com/package/@aws-sdk/client-ec2) - AWS EC2 API
+- [@aws-sdk/client-rds](https://www.npmjs.com/package/@aws-sdk/client-rds) - AWS RDS API
+- [@aws-sdk/client-s3](https://www.npmjs.com/package/@aws-sdk/client-s3) - AWS S3 API
+- [@aws-sdk/client-elastic-load-balancing-v2](https://www.npmjs.com/package/@aws-sdk/client-elastic-load-balancing-v2) - AWS ELB API
+- [@aws-sdk/client-cloudwatch](https://www.npmjs.com/package/@aws-sdk/client-cloudwatch) - AWS CloudWatch metrics
+- [Commander.js](https://www.npmjs.com/package/commander) - CLI framework
+- [cli-table3](https://www.npmjs.com/package/cli-table3) - Terminal tables
+- [chalk](https://www.npmjs.com/package/chalk) - Terminal colors
 
 ---
 
