@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { scanCommand } from '../src/commands/scan.js';
 import { askCommand } from '../src/commands/ask.js';
 import { configCommand } from '../src/commands/config.js';
+import { costsCommand } from '../src/commands/costs.js';
 
 const program = new Command();
 
@@ -41,5 +42,12 @@ program
   .command('config <action> [key] [value]')
   .description('Manage configuration (actions: init, show, get, set, path)')
   .action(configCommand);
+
+program
+  .command('costs')
+  .description('Show AI usage costs')
+  .option('--days <N>', 'Number of days to include', '30')
+  .option('--clear', 'Clear cost tracking data')
+  .action(costsCommand);
 
 program.parse();

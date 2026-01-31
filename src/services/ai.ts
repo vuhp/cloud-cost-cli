@@ -4,6 +4,7 @@ import { SavingsOpportunity } from '../types';
 import { ScriptGenerator } from './script-generator';
 import { ExplanationCache } from '../utils/cache';
 import { ConfigLoader } from '../utils/config';
+import { CostTracker } from '../utils/cost-tracker';
 
 export interface AIExplanation {
   summary: string;
@@ -39,9 +40,11 @@ export class AIService {
   private maxExplanations: number = 3;
   private cache: ExplanationCache;
   private useCache: boolean = true;
+  private costTracker: CostTracker;
 
   constructor(config?: AIConfig) {
     this.cache = new ExplanationCache();
+    this.costTracker = new CostTracker();
     
     // Load from config file if no explicit config provided
     if (!config) {
@@ -120,6 +123,17 @@ export class AIService {
           max_tokens: 500,
         });
         content = response.choices[0]?.message?.content || '';
+        
+        // Track cost
+        if (response.usage) {
+          this.costTracker.track({
+            provider: 'openai',
+            model: this.model,
+            operation: 'explanation',
+            inputTokens: response.usage.prompt_tokens,
+            outputTokens: response.usage.completion_tokens,
+          });
+        }
       } else if (this.provider === 'ollama' && this.ollamaClient) {
         const response = await this.ollamaClient.chat({
           model: this.model,
@@ -259,6 +273,17 @@ Format your response as JSON:
           max_tokens: 800,
         });
         content = response.choices[0]?.message?.content || '';
+        
+        // Track cost
+        if (response.usage) {
+          this.costTracker.track({
+            provider: 'openai',
+            model: this.model,
+            operation: 'query',
+            inputTokens: response.usage.prompt_tokens,
+            outputTokens: response.usage.completion_tokens,
+          });
+        }
       } else if (this.provider === 'ollama' && this.ollamaClient) {
         const response = await this.ollamaClient.chat({
           model: this.model,
