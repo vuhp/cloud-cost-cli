@@ -4,7 +4,7 @@ import { CostExplorerClient } from '@aws-sdk/client-cost-explorer';
 import { RDSClient } from '@aws-sdk/client-rds';
 import { S3Client } from '@aws-sdk/client-s3';
 import { ElasticLoadBalancingV2Client } from '@aws-sdk/client-elastic-load-balancing-v2';
-import { fromIni } from '@aws-sdk/credential-providers';
+import { fromIni, fromEnv } from '@aws-sdk/credential-providers';
 
 export interface AWSClientOptions {
   region?: string;
@@ -25,7 +25,10 @@ export class AWSClient {
     this.region = options.region || 'us-east-1';
     this.profile = options.profile || 'default';
 
-    const credentials = fromIni({ profile: this.profile });
+    // Use environment credentials if available, otherwise fall back to profile
+    const credentials = process.env.AWS_ACCESS_KEY_ID
+      ? fromEnv()
+      : fromIni({ profile: this.profile });
 
     this.ec2 = new EC2Client({ region: this.region, credentials });
     this.cloudwatch = new CloudWatchClient({ region: this.region, credentials });
