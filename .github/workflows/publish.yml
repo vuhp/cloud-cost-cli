@@ -10,7 +10,7 @@ jobs:
     
     permissions:
       contents: read
-      id-token: write # Required for npm provenance
+      id-token: write # Required for npm provenance and trusted publishing
     
     steps:
       - name: Checkout code
@@ -28,6 +28,8 @@ jobs:
       - name: Build
         run: npm run build
       
+      # Publish with provenance - GitHub's identity proves authenticity
+      # This works with 2FA because GitHub Actions is a trusted publisher
       - name: Publish to npm
         run: npm publish --provenance --access public
         env:
