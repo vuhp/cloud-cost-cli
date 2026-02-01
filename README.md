@@ -7,7 +7,7 @@
 
 A command-line tool that analyzes your AWS and Azure resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
-**✨ NEW in v0.3.0-beta:** AI-powered explanations and natural language queries!
+**✨ NEW in v0.3.0:** AI-powered explanations and natural language queries!
 
 ---
 
@@ -36,8 +36,8 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ **Multi-cloud support** - AWS and Azure
 - ✅ **AWS analyzers** - EC2, EBS, RDS, S3, ELB, Elastic IP
 - ✅ **Azure analyzers** - VMs, Managed Disks, Storage, SQL, Public IPs
-- ✅ **🤖 AI-powered explanations** - Get human-readable explanations for why resources are costing money (beta)
-- ✅ **💬 Natural language queries** - Ask questions like "What's my biggest cost?" or "Show me idle VMs" (beta)
+- ✅ **🤖 AI-powered explanations** - Get human-readable explanations for why resources are costing money
+- ✅ **💬 Natural language queries** - Ask questions like "What's my biggest cost?" or "Show me idle VMs"
 - ✅ **🔒 Privacy-first AI** - Use local Ollama or cloud OpenAI
 - ✅ **💰 Cost tracking** - Track AI API costs (OpenAI only)
 - ✅ **⚙️ Configuration file** - Save your preferences
@@ -84,11 +84,6 @@ No commitment on timeline - contributions welcome!
 npm install -g cloud-cost-cli
 ```
 
-**Try the beta with AI features:**
-```bash
-npm install -g cloud-cost-cli@beta
-```
-
 ---
 
 ## Usage
@@ -128,7 +123,7 @@ az ad sp create-for-rbac --name "cloud-cost-cli" --role Reader --scopes /subscri
 # }
 ```
 
-### 🤖 AI-Powered Features (Beta)
+### 🤖 AI-Powered Features
 
 **Get AI explanations for opportunities:**
 ```bash
