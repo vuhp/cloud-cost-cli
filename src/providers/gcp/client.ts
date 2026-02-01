@@ -64,14 +64,33 @@ export class GCPClient {
       await this.computeClient.list(request);
     } catch (error: any) {
       const errorMsg = error.message || '';
+      
+      // Show the actual error for debugging
+      if (process.env.DEBUG) {
+        console.error('GCP API Error:', error);
+      }
+      
       if (errorMsg.includes('authentication') || 
           errorMsg.includes('credentials') || 
           errorMsg.includes('permission') ||
           errorMsg.includes('quota') ||
+          errorMsg.includes('Compute Engine API has not been used') ||
           error.code === 401 || 
-          error.code === 403) {
+          error.code === 403 ||
+          error.code === 7) {  // gRPC PERMISSION_DENIED
+        
+        // Provide specific error context
+        let specificError = '';
+        if (errorMsg.includes('Compute Engine API has not been used')) {
+          specificError = '\n⚠️  Compute Engine API is not enabled for this project.\n' +
+                         'Enable it at: https://console.cloud.google.com/apis/library/compute.googleapis.com\n\n';
+        } else if (errorMsg.includes('permission')) {
+          specificError = `\n⚠️  Permission denied. Actual error: ${errorMsg}\n\n`;
+        }
+        
         throw new Error(
-          'GCP authentication failed. Choose one of these options:\n\n' +
+          specificError +
+          'GCP authentication or permissions issue. Choose one of these options:\n\n' +
           'Option 1 - gcloud CLI (easiest):\n' +
           '  gcloud auth application-default login\n' +
           '  gcloud config set project YOUR_PROJECT_ID\n\n' +
@@ -80,7 +99,8 @@ export class GCPClient {
           '  export GCP_PROJECT_ID="your-project-id"\n\n' +
           'Option 3 - Compute Engine (for GCP VMs):\n' +
           '  Runs automatically on GCP VMs with service account attached\n\n' +
-          'See: https://cloud.google.com/docs/authentication/getting-started'
+          'If authenticated, ensure Compute Engine API is enabled:\n' +
+          'https://console.cloud.google.com/apis/library/compute.googleapis.com?project=' + this.projectId
         );
       }
       throw error;
