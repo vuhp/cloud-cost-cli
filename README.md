@@ -390,7 +390,6 @@ npm run build
 ```bash
 npm test              # Run all tests
 npm run test:coverage # Run with coverage report
-npm run test:ui       # Interactive UI
 ```
 
 **Development workflow:**
