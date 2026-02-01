@@ -7,7 +7,7 @@
 
 A command-line tool that analyzes your AWS, Azure, and GCP resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
-**✨ NEW in v0.4.0:** GCP support (Compute Engine + Cloud Storage)!  
+**✨ NEW in v0.4.0:** Full GCP support with 5 analyzers (Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs)!  
 **✨ v0.3.0:** AI-powered explanations and natural language queries!
 
 ---
@@ -23,9 +23,9 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 **What it finds:**
 - Idle VMs/Compute instances (low CPU, stopped but still billed)
 - Unattached volumes, disks, and snapshots
-- Oversized database instances (RDS, Azure SQL)
+- Oversized database instances (RDS, Azure SQL, Cloud SQL)
 - Old load balancers with no traffic
-- Unused public IP addresses
+- Unused public IP addresses / static IPs
 - Underutilized resources that can be downsized
 - Storage without lifecycle policies
 
