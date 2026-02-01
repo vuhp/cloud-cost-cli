@@ -26,7 +26,7 @@ program
   .option('--min-savings <amount>', 'Filter by minimum savings ($/month)')
   .option('--accurate', 'Use real-time pricing from AWS (slower but more accurate)')
   .option('--explain', 'AI-powered explanations for top opportunities')
-  .option('--ai-provider <openai|ollama>', 'AI provider (default: openai)', 'openai')
+  .option('--ai-provider <openai|ollama>', 'AI provider (reads from config if not specified)')
   .option('--ai-model <model>', 'AI model (gpt-4o-mini for OpenAI, llama3.2:3b for Ollama)')
   .option('--verbose', 'Verbose logging')
   .action(scanCommand);
@@ -34,7 +34,7 @@ program
 program
   .command('ask <query>')
   .description('Ask natural language questions about your cloud costs')
-  .option('--ai-provider <openai|ollama>', 'AI provider (default: openai)', 'openai')
+  .option('--ai-provider <openai|ollama>', 'AI provider (reads from config if not specified)')
   .option('--ai-model <model>', 'AI model to use')
   .action(askCommand);
 

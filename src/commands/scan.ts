@@ -17,6 +17,7 @@ import { renderJSON } from '../reporters/json';
 import { error, info, success } from '../utils/logger';
 import { AIService } from '../services/ai';
 import { saveScanCache } from './ask';
+import { ConfigLoader } from '../utils/config';
 
 interface ScanCommandOptions {
   provider: string;
@@ -158,10 +159,25 @@ async function scanAWS(options: ScanCommandOptions) {
     let aiService: AIService | undefined;
     
     if (options.explain) {
-      const provider = (options.aiProvider as 'openai' | 'ollama') || 'openai';
+      // Load config file to get defaults
+      const fileConfig = ConfigLoader.load();
       
-      if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
-        error('--explain with OpenAI requires OPENAI_API_KEY environment variable');
+      // CLI flags override config file
+      const provider = (options.aiProvider as 'openai' | 'ollama') || fileConfig.ai?.provider || 'openai';
+      const model = options.aiModel || fileConfig.ai?.model;
+      const maxExplanations = fileConfig.ai?.maxExplanations;
+      
+      // Debug logging
+      if (process.env.DEBUG) {
+        console.error('options.aiProvider:', options.aiProvider, '(type:', typeof options.aiProvider, ')');
+        console.error('fileConfig.ai?.provider:', fileConfig.ai?.provider);
+        console.error('Provider detected:', provider);
+        console.error('Has API key in config:', !!fileConfig.ai?.apiKey);
+        console.error('Has env API key:', !!process.env.OPENAI_API_KEY);
+      }
+      
+      if (provider === 'openai' && !process.env.OPENAI_API_KEY && !fileConfig.ai?.apiKey) {
+        error('--explain with OpenAI requires OPENAI_API_KEY environment variable or config file');
         info('Set it with: export OPENAI_API_KEY="sk-..."');
         info('Or use --ai-provider ollama for local AI (requires Ollama installed)');
         process.exit(1);
@@ -170,8 +186,9 @@ async function scanAWS(options: ScanCommandOptions) {
       try {
         aiService = new AIService({
           provider,
-          apiKey: process.env.OPENAI_API_KEY,
-          model: options.aiModel,
+          apiKey: provider === 'openai' ? (process.env.OPENAI_API_KEY || fileConfig.ai?.apiKey) : undefined,
+          model,
+          maxExplanations,
         });
         
         if (provider === 'ollama') {
@@ -293,10 +310,25 @@ async function scanAzure(options: ScanCommandOptions) {
   let aiService: AIService | undefined;
   
   if (options.explain) {
-    const provider = (options.aiProvider as 'openai' | 'ollama') || 'openai';
+    // Load config file to get defaults
+    const fileConfig = ConfigLoader.load();
     
-    if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
-      error('--explain with OpenAI requires OPENAI_API_KEY environment variable');
+    // CLI flags override config file
+    const provider = (options.aiProvider as 'openai' | 'ollama') || fileConfig.ai?.provider || 'openai';
+    const model = options.aiModel || fileConfig.ai?.model;
+    const maxExplanations = fileConfig.ai?.maxExplanations;
+    
+    // Debug logging
+    if (process.env.DEBUG) {
+      console.error('options.aiProvider:', options.aiProvider, '(type:', typeof options.aiProvider, ')');
+      console.error('fileConfig.ai?.provider:', fileConfig.ai?.provider);
+      console.error('Provider detected:', provider);
+      console.error('Has API key in config:', !!fileConfig.ai?.apiKey);
+      console.error('Has env API key:', !!process.env.OPENAI_API_KEY);
+    }
+    
+    if (provider === 'openai' && !process.env.OPENAI_API_KEY && !fileConfig.ai?.apiKey) {
+      error('--explain with OpenAI requires OPENAI_API_KEY environment variable or config file');
       info('Set it with: export OPENAI_API_KEY="sk-..."');
       info('Or use --ai-provider ollama for local AI (requires Ollama installed)');
       process.exit(1);
@@ -305,8 +337,9 @@ async function scanAzure(options: ScanCommandOptions) {
     try {
       aiService = new AIService({
         provider,
-        apiKey: process.env.OPENAI_API_KEY,
-        model: options.aiModel,
+        apiKey: provider === 'openai' ? (process.env.OPENAI_API_KEY || fileConfig.ai?.apiKey) : undefined,
+        model,
+        maxExplanations,
       });
       
       if (provider === 'ollama') {

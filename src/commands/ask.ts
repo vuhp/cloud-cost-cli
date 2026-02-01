@@ -1,5 +1,6 @@
 import { AIService } from '../services/ai';
 import { info, error, success } from '../utils/logger';
+import { ConfigLoader } from '../utils/config';
 import chalk from 'chalk';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -36,19 +37,25 @@ export async function askCommand(query: string, options: AskCommandOptions) {
   info(`Using scan from ${ageMinutes} minutes ago (${scanData.provider}${scanData.region ? ', ' + scanData.region : ''})`);
   
   // Initialize AI service
-  const provider = (options.aiProvider as 'openai' | 'ollama') || 'openai';
+  // Load config file to get defaults
+  const fileConfig = ConfigLoader.load();
   
-  if (provider === 'openai' && !process.env.OPENAI_API_KEY) {
+  // CLI flags override config file
+  const provider = (options.aiProvider as 'openai' | 'ollama') || fileConfig.ai?.provider || 'openai';
+  const model = options.aiModel || fileConfig.ai?.model;
+  
+  if (provider === 'openai' && !process.env.OPENAI_API_KEY && !fileConfig.ai?.apiKey) {
     error('Natural language queries require OPENAI_API_KEY or --ai-provider ollama');
     info('Set it with: export OPENAI_API_KEY="sk-..."');
+    info('Or run: cloud-cost-cli config set ai.provider ollama');
     process.exit(1);
   }
   
   try {
     const aiService = new AIService({
       provider,
-      apiKey: process.env.OPENAI_API_KEY,
-      model: options.aiModel,
+      apiKey: provider === 'openai' ? (process.env.OPENAI_API_KEY || fileConfig.ai?.apiKey) : undefined,
+      model,
     });
     
     console.log(chalk.cyan('\n🤔 Thinking...\n'));

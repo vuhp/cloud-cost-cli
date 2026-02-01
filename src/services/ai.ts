@@ -50,25 +50,37 @@ export class AIService {
     if (!config) {
       const fileConfig = ConfigLoader.load();
       
-      if (fileConfig.ai?.apiKey || process.env.OPENAI_API_KEY) {
-        config = {
-          provider: fileConfig.ai?.provider || 'openai',
-          apiKey: fileConfig.ai?.apiKey || process.env.OPENAI_API_KEY,
-          model: fileConfig.ai?.model,
-          maxExplanations: fileConfig.ai?.maxExplanations,
-        };
+      // Determine provider (precedence: explicit config > env detection)
+      let provider: AIProvider = 'openai';
+      
+      if (fileConfig.ai?.provider) {
+        // User explicitly set provider in config - ALWAYS respect it
+        provider = fileConfig.ai.provider;
+      } else if (fileConfig.ai?.apiKey || process.env.OPENAI_API_KEY) {
+        provider = 'openai';
       } else {
-        // Default to ollama (local, no API key needed)
-        config = {
-          provider: fileConfig.ai?.provider || 'ollama',
-          model: fileConfig.ai?.model,
-          maxExplanations: fileConfig.ai?.maxExplanations,
-        };
+        provider = 'ollama';
       }
+      
+      config = {
+        provider,
+        apiKey: fileConfig.ai?.apiKey || process.env.OPENAI_API_KEY,
+        model: fileConfig.ai?.model,
+        maxExplanations: fileConfig.ai?.maxExplanations,
+      };
     }
 
     this.provider = config.provider;
     this.maxExplanations = config.maxExplanations || 3;
+
+    // Debug logging (remove later)
+    if (process.env.DEBUG) {
+      console.error('AIService config:', JSON.stringify({
+        provider: config.provider,
+        hasApiKey: !!config.apiKey,
+        model: config.model,
+      }));
+    }
 
     if (config.provider === 'openai') {
       if (!config.apiKey) {
@@ -314,16 +326,23 @@ Format your response as JSON:
   }
 
   private buildQueryContext(scanReport: any): string {
-    const { summary, opportunities } = scanReport;
+    const { summary, opportunities, totalPotentialSavings } = scanReport;
     
     let context = `Cost Optimization Report:\n`;
-    context += `Total potential savings: $${summary.totalSavings.toFixed(2)}/month\n`;
-    context += `Total opportunities: ${summary.totalOpportunities}\n\n`;
+    context += `Total potential savings: $${totalPotentialSavings?.toFixed(2) || '0.00'}/month\n`;
+    context += `Total opportunities: ${opportunities?.length || 0}\n`;
+    context += `Idle resources: ${summary?.idleResources || 0}\n`;
+    context += `Unused resources: ${summary?.unusedResources || 0}\n`;
+    context += `Oversized resources: ${summary?.oversizedResources || 0}\n\n`;
     
-    context += `Top opportunities:\n`;
-    opportunities.slice(0, 10).forEach((opp: any, i: number) => {
-      context += `${i + 1}. ${opp.resourceType} (${opp.resourceId}): ${opp.recommendation} - Save $${opp.estimatedSavings.toFixed(2)}/mo\n`;
-    });
+    if (opportunities && opportunities.length > 0) {
+      context += `Top opportunities:\n`;
+      opportunities.slice(0, 10).forEach((opp: any, i: number) => {
+        context += `${i + 1}. ${opp.resourceType} (${opp.resourceId}): ${opp.recommendation} - Save $${opp.estimatedSavings?.toFixed(2) || '0.00'}/mo\n`;
+      });
+    } else {
+      context += `No opportunities found.\n`;
+    }
     
     return context;
   }
