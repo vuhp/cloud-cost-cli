@@ -6,6 +6,7 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { ElasticLoadBalancingV2Client } from '@aws-sdk/client-elastic-load-balancing-v2';
 import { LambdaClient } from '@aws-sdk/client-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { CloudWatchLogsClient } from '@aws-sdk/client-cloudwatch-logs';
 import { fromIni, fromEnv } from '@aws-sdk/credential-providers';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -25,6 +26,7 @@ export class AWSClient {
   private elb: ElasticLoadBalancingV2Client;
   private lambda: LambdaClient;
   private dynamodb: DynamoDBClient;
+  private cloudwatchLogs: CloudWatchLogsClient;
   public region: string;
   public profile: string;
 
@@ -47,6 +49,7 @@ export class AWSClient {
     this.elb = new ElasticLoadBalancingV2Client({ region: this.region, credentials });
     this.lambda = new LambdaClient({ region: this.region, credentials });
     this.dynamodb = new DynamoDBClient({ region: this.region, credentials });
+    this.cloudwatchLogs = new CloudWatchLogsClient({ region: this.region, credentials });
   }
 
   private getProfileRegion(profileName: string): string | null {
@@ -111,5 +114,9 @@ export class AWSClient {
 
   getDynamoDBClient() {
     return this.dynamodb;
+  }
+
+  getCloudWatchLogsClient() {
+    return this.cloudwatchLogs;
   }
 }

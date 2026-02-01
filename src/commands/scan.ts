@@ -8,6 +8,7 @@ import { analyzeElasticIPs } from '../providers/aws/eip';
 import { analyzeLambdaFunctions } from '../providers/aws/lambda';
 import { analyzeNATGateways } from '../providers/aws/nat-gateway';
 import { analyzeDynamoDBTables } from '../providers/aws/dynamodb';
+import { analyzeCloudWatchLogs } from '../providers/aws/cloudwatch-logs';
 import { AzureClient } from '../providers/azure/client';
 import { analyzeAzureVMs } from '../providers/azure/vms';
 import { analyzeAzureDisks } from '../providers/azure/disks';
@@ -109,6 +110,9 @@ async function scanAWS(options: ScanCommandOptions) {
     info('Analyzing DynamoDB tables...');
     const dynamodbPromise = analyzeDynamoDBTables(client);
 
+    info('Analyzing CloudWatch Logs...');
+    const cloudwatchLogsPromise = analyzeCloudWatchLogs(client);
+
     // Wait for all analyzers to complete
     const [
       ec2Opportunities,
@@ -120,6 +124,7 @@ async function scanAWS(options: ScanCommandOptions) {
       lambdaOpportunities,
       natGatewayOpportunities,
       dynamodbOpportunities,
+      cloudwatchLogsOpportunities,
     ] = await Promise.all([
       ec2Promise,
       ebsPromise,
@@ -130,6 +135,7 @@ async function scanAWS(options: ScanCommandOptions) {
       lambdaPromise,
       natGatewayPromise,
       dynamodbPromise,
+      cloudwatchLogsPromise,
     ]);
 
     success(`Found ${ec2Opportunities.length} EC2 opportunities`);
@@ -141,6 +147,7 @@ async function scanAWS(options: ScanCommandOptions) {
     success(`Found ${lambdaOpportunities.length} Lambda opportunities`);
     success(`Found ${natGatewayOpportunities.length} NAT Gateway opportunities`);
     success(`Found ${dynamodbOpportunities.length} DynamoDB opportunities`);
+    success(`Found ${cloudwatchLogsOpportunities.length} CloudWatch Logs opportunities`);
 
     // Combine opportunities
     const allOpportunities: SavingsOpportunity[] = [
@@ -153,6 +160,7 @@ async function scanAWS(options: ScanCommandOptions) {
       ...lambdaOpportunities,
       ...natGatewayOpportunities,
       ...dynamodbOpportunities,
+      ...cloudwatchLogsOpportunities,
     ];
 
     // Filter by minimum savings if specified
