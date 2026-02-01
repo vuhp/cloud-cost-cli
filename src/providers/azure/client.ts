@@ -32,6 +32,31 @@ export class AzureClient {
     this.location = config.location || '';
   }
 
+  // Test Azure credentials by making a lightweight API call
+  async testConnection(): Promise<void> {
+    try {
+      const computeClient = this.getComputeClient();
+      // Try to list VMs (we'll just get an iterator, not actually iterate)
+      const vmsIterator = computeClient.virtualMachines.listAll();
+      // Get first page to test auth
+      await vmsIterator.next();
+    } catch (error: any) {
+      const errorMsg = error.message || '';
+      if (errorMsg.includes('No subscriptions found') || 
+          errorMsg.includes('authentication') || 
+          errorMsg.includes('credentials') || 
+          errorMsg.includes('login') ||
+          error.statusCode === 401 || 
+          error.code === 'CredentialUnavailableError') {
+        throw new Error(
+          'Azure authentication failed. Please run "az login" first or set up service principal credentials.\n' +
+          'See: https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli'
+        );
+      }
+      throw error;
+    }
+  }
+
   getComputeClient(): ComputeManagementClient {
     return new ComputeManagementClient(this.credential, this.subscriptionId);
   }

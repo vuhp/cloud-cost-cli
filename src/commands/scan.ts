@@ -223,6 +223,14 @@ async function scanAzure(options: ScanCommandOptions) {
     info('Scanning all locations (no filter specified)');
   }
   
+  // Test Azure credentials before scanning
+  try {
+    await client.testConnection();
+  } catch (error: any) {
+    error(error.message);
+    process.exit(1);
+  }
+  
   if (options.accurate) {
     info('Note: --accurate flag is not yet implemented. Using estimated pricing.');
   }
