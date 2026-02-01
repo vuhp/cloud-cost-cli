@@ -67,9 +67,14 @@ No commitment on timeline - contributions welcome!
 
 **Requirements:**
 - Node.js >= 18
-- Cloud credentials:
-  - **AWS**: [AWS CLI configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) or environment variables
-  - **Azure**: [Azure CLI logged in](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) or environment variables
+- Cloud credentials (choose one per provider):
+  - **AWS**: 
+    - [AWS CLI configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) OR
+    - Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
+  - **Azure**:
+    - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) (`az login`) OR
+    - Service Principal (env vars: `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`) OR
+    - Managed Identity (for Azure VMs)
 - **Optional for AI features**:
   - OpenAI API key OR
   - [Ollama](https://ollama.ai) installed locally (free, private, runs on your machine)
@@ -97,10 +102,30 @@ cloud-cost-cli scan --provider aws --profile default --region us-east-1
 
 **Azure scan:**
 ```bash
-# Set Azure subscription ID (or use --subscription-id flag)
+# Option 1: Azure CLI (easiest for local use)
+az login
 export AZURE_SUBSCRIPTION_ID="your-subscription-id"
-
 cloud-cost-cli scan --provider azure --location eastus
+
+# Option 2: Service Principal (recommended for CI/CD and automation)
+export AZURE_CLIENT_ID="your-app-id"
+export AZURE_CLIENT_SECRET="your-secret"
+export AZURE_TENANT_ID="your-tenant-id"
+export AZURE_SUBSCRIPTION_ID="your-subscription-id"
+cloud-cost-cli scan --provider azure --location eastus
+```
+
+**How to create Azure Service Principal:**
+```bash
+# Create service principal with Reader role
+az ad sp create-for-rbac --name "cloud-cost-cli" --role Reader --scopes /subscriptions/YOUR_SUBSCRIPTION_ID
+
+# Output will show:
+# {
+#   "appId": "xxx",          # Use as AZURE_CLIENT_ID
+#   "password": "xxx",       # Use as AZURE_CLIENT_SECRET
+#   "tenant": "xxx"          # Use as AZURE_TENANT_ID
+# }
 ```
 
 ### 🤖 AI-Powered Features (Beta)

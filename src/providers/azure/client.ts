@@ -49,8 +49,16 @@ export class AzureClient {
           error.statusCode === 401 || 
           error.code === 'CredentialUnavailableError') {
         throw new Error(
-          'Azure authentication failed. Please run "az login" first or set up service principal credentials.\n' +
-          'See: https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli'
+          'Azure authentication failed. Choose one of these options:\n\n' +
+          'Option 1 - Azure CLI (easiest):\n' +
+          '  az login\n\n' +
+          'Option 2 - Service Principal (recommended for automation):\n' +
+          '  export AZURE_CLIENT_ID="your-app-id"\n' +
+          '  export AZURE_CLIENT_SECRET="your-secret"\n' +
+          '  export AZURE_TENANT_ID="your-tenant-id"\n\n' +
+          'Option 3 - Managed Identity (for Azure VMs):\n' +
+          '  Runs automatically on Azure VMs with managed identity enabled\n\n' +
+          'See: https://learn.microsoft.com/en-us/javascript/api/overview/azure/identity-readme'
         );
       }
       throw error;
