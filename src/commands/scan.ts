@@ -5,6 +5,7 @@ import { analyzeRDSInstances } from '../providers/aws/rds';
 import { analyzeS3Buckets } from '../providers/aws/s3';
 import { analyzeELBs } from '../providers/aws/elb';
 import { analyzeElasticIPs } from '../providers/aws/eip';
+import { analyzeLambdaFunctions } from '../providers/aws/lambda';
 import { AzureClient } from '../providers/azure/client';
 import { analyzeAzureVMs } from '../providers/azure/vms';
 import { analyzeAzureDisks } from '../providers/azure/disks';
@@ -101,6 +102,9 @@ async function scanAWS(options: ScanCommandOptions) {
     info('Analyzing Elastic IPs...');
     const eipPromise = analyzeElasticIPs(client);
 
+    info('Analyzing Lambda functions...');
+    const lambdaPromise = analyzeLambdaFunctions(client);
+
     // Wait for all analyzers to complete
     const [
       ec2Opportunities,
@@ -109,6 +113,7 @@ async function scanAWS(options: ScanCommandOptions) {
       s3Opportunities,
       elbOpportunities,
       eipOpportunities,
+      lambdaOpportunities,
     ] = await Promise.all([
       ec2Promise,
       ebsPromise,
@@ -116,6 +121,7 @@ async function scanAWS(options: ScanCommandOptions) {
       s3Promise,
       elbPromise,
       eipPromise,
+      lambdaPromise,
     ]);
 
     success(`Found ${ec2Opportunities.length} EC2 opportunities`);
@@ -124,6 +130,7 @@ async function scanAWS(options: ScanCommandOptions) {
     success(`Found ${s3Opportunities.length} S3 opportunities`);
     success(`Found ${elbOpportunities.length} ELB opportunities`);
     success(`Found ${eipOpportunities.length} EIP opportunities`);
+    success(`Found ${lambdaOpportunities.length} Lambda opportunities`);
 
     // Combine opportunities
     const allOpportunities: SavingsOpportunity[] = [
@@ -133,6 +140,7 @@ async function scanAWS(options: ScanCommandOptions) {
       ...s3Opportunities,
       ...elbOpportunities,
       ...eipOpportunities,
+      ...lambdaOpportunities,
     ];
 
     // Filter by minimum savings if specified
