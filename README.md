@@ -434,11 +434,23 @@ A: No. It only reads resource metadata and usage metrics. It never modifies or d
 
 **Q: What permissions are required?**  
 A: Read-only permissions for each cloud provider:
-- **AWS**: EC2, EBS, RDS, S3, ELB, CloudWatch (see [AWS permissions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html))
+- **AWS**: EC2, EBS, RDS, S3, ELB, CloudWatch (ReadOnly IAM policies recommended)
 - **Azure**: Reader role on subscription or resource groups
+- **GCP**: Compute Viewer, Storage Viewer, Cloud SQL Viewer, Monitoring Viewer roles
 
 **Q: How accurate are the savings estimates?**  
-A: Estimates are based on current pricing and usage patterns. Actual savings may vary by region and your specific pricing agreements (Reserved Instances, Savings Plans, etc.).
+A: Cost estimates are based on standard pay-as-you-go pricing (as of January 2026) for:
+- **AWS**: us-east-1 region
+- **Azure**: East US region  
+- **GCP**: us-central1 region
+
+Actual savings may vary based on:
+- Your specific region
+- Reserved Instances / Savings Plans / Committed Use Discounts
+- Enterprise agreements or custom pricing
+- Currency exchange rates
+
+Usage patterns (CPU, connections, etc.) are analyzed over the past 7-30 days for accuracy.
 
 **Q: Is my data sent to OpenAI?**  
 A: Only if you use OpenAI for AI features. When you use `--explain` without specifying `--ai-provider`, it defaults to OpenAI and requires an API key. Resource metadata and recommendations are sent to OpenAI's API to generate explanations. If you want complete privacy, use `--ai-provider ollama` (or set it in config) which runs 100% locally on your machine.

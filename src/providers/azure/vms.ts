@@ -2,26 +2,7 @@ import { AzureClient } from './client';
 import { SavingsOpportunity } from '../../types/opportunity';
 import { MonitorClient } from '@azure/arm-monitor';
 import dayjs from 'dayjs';
-
-// Azure VM pricing (East US, pay-as-you-go, monthly estimate)
-// Source: Azure pricing as of 2026-01, monthly = hourly × 730
-export const AZURE_VM_PRICING: Record<string, number> = {
-  'Standard_B1s': 7.59,
-  'Standard_B1ms': 15.33,
-  'Standard_B2s': 30.37,
-  'Standard_B2ms': 60.74,
-  'Standard_D2s_v3': 70.08,
-  'Standard_D4s_v3': 140.16,
-  'Standard_D8s_v3': 280.32,
-  'Standard_E2s_v3': 109.50,
-  'Standard_E4s_v3': 219.00,
-  'Standard_F2s_v2': 62.05,
-  'Standard_F4s_v2': 124.10,
-};
-
-function getVMMonthlyCost(vmSize: string): number {
-  return AZURE_VM_PRICING[vmSize] || 100; // Fallback estimate
-}
+import { getAzureVMMonthlyCost } from '../../analyzers/cost-estimator';
 
 export async function analyzeAzureVMs(
   client: AzureClient
@@ -50,7 +31,7 @@ export async function analyzeAzureVMs(
         continue;
       }
 
-      const currentCost = getVMMonthlyCost(vmSize);
+      const currentCost = getAzureVMMonthlyCost(vmSize);
 
       // Get CPU metrics for the last 7 days
       const avgCpu = await getAverageCPU(monitorClient, vm.id, 7);
@@ -81,7 +62,7 @@ export async function analyzeAzureVMs(
       else if (avgCpu < 20) {
         const smallerSize = getSmallerVMSize(vmSize);
         if (smallerSize) {
-          const newCost = getVMMonthlyCost(smallerSize);
+          const newCost = getAzureVMMonthlyCost(smallerSize);
           const savings = currentCost - newCost;
 
           if (savings > 10) { // At least $10/month savings

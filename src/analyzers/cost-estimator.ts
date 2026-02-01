@@ -59,6 +59,43 @@ export const ELB_PRICING = {
 
 export const EIP_PRICING_HOURLY = 0.005;
 
+// Azure Pricing (based on East US, Jan 2026)
+export const AZURE_VM_PRICING: Record<string, number> = {
+  'Standard_B1s': 7.59,
+  'Standard_B1ms': 15.33,
+  'Standard_B2s': 30.37,
+  'Standard_B2ms': 60.74,
+  'Standard_D2s_v3': 70.08,
+  'Standard_D4s_v3': 140.16,
+  'Standard_D8s_v3': 280.32,
+  'Standard_E2s_v3': 109.50,
+  'Standard_E4s_v3': 219.00,
+  'Standard_F2s_v2': 62.05,
+  'Standard_F4s_v2': 124.10,
+};
+
+export const AZURE_DISK_PRICING: Record<string, number> = {
+  'Premium_LRS': 0.135,      // Premium SSD
+  'StandardSSD_LRS': 0.075,  // Standard SSD
+  'Standard_LRS': 0.045,      // Standard HDD
+};
+
+export const AZURE_SQL_PRICING: Record<string, number> = {
+  'GP_Gen5_2': 438.29,  // General Purpose, 2 vCores
+  'GP_Gen5_4': 876.58,  // General Purpose, 4 vCores
+  'GP_Gen5_8': 1753.16, // General Purpose, 8 vCores
+  'BC_Gen5_2': 876.58,  // Business Critical, 2 vCores
+  'BC_Gen5_4': 1753.16, // Business Critical, 4 vCores
+};
+
+export const AZURE_STORAGE_PRICING = {
+  hot: 0.0184,
+  cool: 0.01,
+  archive: 0.002,
+};
+
+export const AZURE_PUBLIC_IP_MONTHLY_COST = 3.65;
+
 // GCP Pricing (based on us-central1, Jan 2026)
 export const GCE_PRICING: Record<string, number> = {
   'e2-micro': 6.11,
@@ -196,4 +233,27 @@ export function getGCSMonthlyCost(sizeGB: number, storageClass: string = 'standa
 
 export function getGCPCloudSQLMonthlyCost(tier: string): number {
   return GCP_CLOUDSQL_PRICING[tier] || 50; // Generic estimate if unknown
+}
+
+// Azure cost helpers
+export function getAzureVMMonthlyCost(vmSize: string): number {
+  return AZURE_VM_PRICING[vmSize] || 100; // Generic estimate if unknown
+}
+
+export function getAzureDiskMonthlyCost(sizeGB: number, diskType: string): number {
+  const pricePerGB = AZURE_DISK_PRICING[diskType] || 0.075;
+  return sizeGB * pricePerGB;
+}
+
+export function getAzureSQLMonthlyCost(sku: string): number {
+  return AZURE_SQL_PRICING[sku] || 500; // Generic estimate if unknown
+}
+
+export function getAzureStorageMonthlyCost(sizeGB: number, tier: string = 'hot'): number {
+  const pricePerGB = AZURE_STORAGE_PRICING[tier as keyof typeof AZURE_STORAGE_PRICING] || AZURE_STORAGE_PRICING.hot;
+  return sizeGB * pricePerGB;
+}
+
+export function getAzurePublicIPMonthlyCost(): number {
+  return AZURE_PUBLIC_IP_MONTHLY_COST;
 }

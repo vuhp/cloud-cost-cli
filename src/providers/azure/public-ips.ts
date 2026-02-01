@@ -1,8 +1,6 @@
 import { AzureClient } from './client';
 import { SavingsOpportunity } from '../../types/opportunity';
-
-// Azure Public IP pricing (per month, East US)
-const PUBLIC_IP_MONTHLY_COST = 3.65; // Static IP address
+import { getAzurePublicIPMonthlyCost } from '../../analyzers/cost-estimator';
 
 export async function analyzeAzurePublicIPs(
   client: AzureClient
@@ -31,8 +29,8 @@ export async function analyzeAzurePublicIPs(
           resourceId: ip.id,
           resourceName: ip.name,
           category: 'unused',
-          currentCost: PUBLIC_IP_MONTHLY_COST,
-          estimatedSavings: PUBLIC_IP_MONTHLY_COST,
+          currentCost: getAzurePublicIPMonthlyCost(),
+          estimatedSavings: getAzurePublicIPMonthlyCost(),
           confidence: 'high',
           recommendation: 'Unassociated public IP address. Delete if not needed.',
           metadata: {

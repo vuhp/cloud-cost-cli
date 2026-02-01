@@ -1,18 +1,6 @@
 import { AzureClient } from './client';
 import { SavingsOpportunity } from '../../types/opportunity';
-
-// Azure SQL Database pricing (per month, East US, vCore model)
-export const AZURE_SQL_PRICING: Record<string, number> = {
-  'GP_Gen5_2': 438.29,  // General Purpose, 2 vCores
-  'GP_Gen5_4': 876.58,  // General Purpose, 4 vCores
-  'GP_Gen5_8': 1753.16, // General Purpose, 8 vCores
-  'BC_Gen5_2': 876.58,  // Business Critical, 2 vCores
-  'BC_Gen5_4': 1753.16, // Business Critical, 4 vCores
-};
-
-function getSQLMonthlyCost(sku: string): number {
-  return AZURE_SQL_PRICING[sku] || 500; // Fallback estimate
-}
+import { getAzureSQLMonthlyCost } from '../../analyzers/cost-estimator';
 
 export async function analyzeAzureSQL(
   client: AzureClient
@@ -45,7 +33,7 @@ export async function analyzeAzureSQL(
 
           const sku = db.sku?.name || 'Unknown';
           const tier = db.sku?.tier || 'Unknown';
-          const currentCost = getSQLMonthlyCost(sku);
+          const currentCost = getAzureSQLMonthlyCost(sku);
 
           // Get DTU/CPU usage metrics
           const avgDtu = await getAverageDTU(monitorClient, db.id, 7);

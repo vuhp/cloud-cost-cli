@@ -1,12 +1,6 @@
 import { AzureClient } from './client';
 import { SavingsOpportunity } from '../../types/opportunity';
-
-// Azure Blob Storage pricing (per GB/month, East US)
-export const AZURE_STORAGE_PRICING = {
-  hot: 0.0184,
-  cool: 0.01,
-  archive: 0.002,
-};
+import { getAzureStorageMonthlyCost } from '../../analyzers/cost-estimator';
 
 export async function analyzeAzureStorage(
   client: AzureClient

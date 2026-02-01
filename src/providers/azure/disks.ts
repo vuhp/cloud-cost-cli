@@ -1,17 +1,6 @@
 import { AzureClient } from './client';
 import { SavingsOpportunity } from '../../types/opportunity';
-
-// Azure Managed Disk pricing (per GB/month, East US)
-export const AZURE_DISK_PRICING: Record<string, number> = {
-  'Premium_LRS': 0.135,      // Premium SSD
-  'StandardSSD_LRS': 0.075,  // Standard SSD
-  'Standard_LRS': 0.045,      // Standard HDD
-};
-
-function getDiskMonthlyCost(sizeGB: number, diskType: string): number {
-  const pricePerGB = AZURE_DISK_PRICING[diskType] || 0.075;
-  return sizeGB * pricePerGB;
-}
+import { getAzureDiskMonthlyCost } from '../../analyzers/cost-estimator';
 
 export async function analyzeAzureDisks(
   client: AzureClient
@@ -33,7 +22,7 @@ export async function analyzeAzureDisks(
 
       const sizeGB = disk.diskSizeGB || 0;
       const diskType = disk.sku?.name || 'Standard_LRS';
-      const currentCost = getDiskMonthlyCost(sizeGB, diskType);
+      const currentCost = getAzureDiskMonthlyCost(sizeGB, diskType);
 
       // Opportunity 1: Unattached disk
       if (disk.diskState === 'Unattached') {
@@ -60,7 +49,7 @@ export async function analyzeAzureDisks(
       // Opportunity 2: Premium disk that could be Standard SSD
       else if (diskType === 'Premium_LRS' && sizeGB < 256) {
         const newType = 'StandardSSD_LRS';
-        const newCost = getDiskMonthlyCost(sizeGB, newType);
+        const newCost = getAzureDiskMonthlyCost(sizeGB, newType);
         const savings = currentCost - newCost;
 
         if (savings > 5) {
