@@ -6,6 +6,7 @@ import { analyzeS3Buckets } from '../providers/aws/s3';
 import { analyzeELBs } from '../providers/aws/elb';
 import { analyzeElasticIPs } from '../providers/aws/eip';
 import { analyzeLambdaFunctions } from '../providers/aws/lambda';
+import { analyzeNATGateways } from '../providers/aws/nat-gateway';
 import { AzureClient } from '../providers/azure/client';
 import { analyzeAzureVMs } from '../providers/azure/vms';
 import { analyzeAzureDisks } from '../providers/azure/disks';
@@ -101,6 +102,9 @@ async function scanAWS(options: ScanCommandOptions) {
     info('Analyzing Lambda functions...');
     const lambdaPromise = analyzeLambdaFunctions(client);
 
+    info('Analyzing NAT Gateways...');
+    const natGatewayPromise = analyzeNATGateways(client);
+
     // Wait for all analyzers to complete
     const [
       ec2Opportunities,
@@ -110,6 +114,7 @@ async function scanAWS(options: ScanCommandOptions) {
       elbOpportunities,
       eipOpportunities,
       lambdaOpportunities,
+      natGatewayOpportunities,
     ] = await Promise.all([
       ec2Promise,
       ebsPromise,
@@ -118,6 +123,7 @@ async function scanAWS(options: ScanCommandOptions) {
       elbPromise,
       eipPromise,
       lambdaPromise,
+      natGatewayPromise,
     ]);
 
     success(`Found ${ec2Opportunities.length} EC2 opportunities`);
@@ -127,6 +133,7 @@ async function scanAWS(options: ScanCommandOptions) {
     success(`Found ${elbOpportunities.length} ELB opportunities`);
     success(`Found ${eipOpportunities.length} EIP opportunities`);
     success(`Found ${lambdaOpportunities.length} Lambda opportunities`);
+    success(`Found ${natGatewayOpportunities.length} NAT Gateway opportunities`);
 
     // Combine opportunities
     const allOpportunities: SavingsOpportunity[] = [
@@ -137,6 +144,7 @@ async function scanAWS(options: ScanCommandOptions) {
       ...elbOpportunities,
       ...eipOpportunities,
       ...lambdaOpportunities,
+      ...natGatewayOpportunities,
     ];
 
     // Filter by minimum savings if specified
