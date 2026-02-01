@@ -21,6 +21,7 @@ import { analyzeGCSBuckets } from '../providers/gcp/storage';
 import { analyzeCloudSQLInstances } from '../providers/gcp/cloudsql';
 import { analyzePersistentDisks } from '../providers/gcp/disks';
 import { analyzeStaticIPs } from '../providers/gcp/static-ips';
+import { analyzeLoadBalancers } from '../providers/gcp/load-balancers';
 import { ScanReport, SavingsOpportunity } from '../types/opportunity';
 import { renderTable } from '../reporters/table';
 import { renderJSON } from '../reporters/json';
@@ -439,6 +440,9 @@ async function scanGCP(options: ScanCommandOptions) {
   info('Analyzing Static IPs...');
   const ipsPromise = analyzeStaticIPs(client);
 
+  info('Analyzing Load Balancers...');
+  const lbPromise = analyzeLoadBalancers(client);
+
   // Wait for all analyzers to complete
   const [
     gceOpportunities,
@@ -446,12 +450,14 @@ async function scanGCP(options: ScanCommandOptions) {
     cloudsqlOpportunities,
     disksOpportunities,
     ipsOpportunities,
+    lbOpportunities,
   ] = await Promise.all([
     gcePromise,
     gcsPromise,
     cloudsqlPromise,
     disksPromise,
     ipsPromise,
+    lbPromise,
   ]);
 
   success(`Found ${gceOpportunities.length} Compute Engine opportunities`);
@@ -459,6 +465,7 @@ async function scanGCP(options: ScanCommandOptions) {
   success(`Found ${cloudsqlOpportunities.length} Cloud SQL opportunities`);
   success(`Found ${disksOpportunities.length} Persistent Disk opportunities`);
   success(`Found ${ipsOpportunities.length} Static IP opportunities`);
+  success(`Found ${lbOpportunities.length} Load Balancer opportunities`);
 
   // Combine opportunities
   const allOpportunities: SavingsOpportunity[] = [
@@ -467,6 +474,7 @@ async function scanGCP(options: ScanCommandOptions) {
     ...cloudsqlOpportunities,
     ...disksOpportunities,
     ...ipsOpportunities,
+    ...lbOpportunities,
   ];
 
   // Filter by minimum savings if specified
