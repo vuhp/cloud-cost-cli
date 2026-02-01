@@ -1,6 +1,7 @@
-import { InstancesClient } from '@google-cloud/compute';
+import { InstancesClient, DisksClient, AddressesClient, GlobalAddressesClient } from '@google-cloud/compute';
 import { Storage } from '@google-cloud/storage';
 import { MetricServiceClient } from '@google-cloud/monitoring';
+import { SqlInstancesServiceClient } from '@google-cloud/sql';
 
 export interface GCPClientConfig {
   projectId?: string;
@@ -12,8 +13,12 @@ export class GCPClient {
   public projectId: string;
   public region: string;
   private computeClient: InstancesClient;
+  private disksClient: DisksClient;
+  private addressesClient: AddressesClient;
+  private globalAddressesClient: GlobalAddressesClient;
   private storageClient: Storage;
   private monitoringClient: MetricServiceClient;
+  private sqlClient: SqlInstancesServiceClient;
 
   constructor(config: GCPClientConfig = {}) {
     // Get project ID from config, env, or default credentials
@@ -38,8 +43,12 @@ export class GCPClient {
       : {};
 
     this.computeClient = new InstancesClient(clientConfig);
+    this.disksClient = new DisksClient(clientConfig);
+    this.addressesClient = new AddressesClient(clientConfig);
+    this.globalAddressesClient = new GlobalAddressesClient(clientConfig);
     this.storageClient = new Storage(clientConfig);
     this.monitoringClient = new MetricServiceClient(clientConfig);
+    this.sqlClient = new SqlInstancesServiceClient(clientConfig);
   }
 
   // Test GCP credentials by making a lightweight API call
@@ -82,11 +91,27 @@ export class GCPClient {
     return this.computeClient;
   }
 
+  getDisksClient(): DisksClient {
+    return this.disksClient;
+  }
+
+  getAddressesClient(): AddressesClient {
+    return this.addressesClient;
+  }
+
+  getGlobalAddressesClient(): GlobalAddressesClient {
+    return this.globalAddressesClient;
+  }
+
   getStorageClient(): Storage {
     return this.storageClient;
   }
 
   getMonitoringClient(): MetricServiceClient {
     return this.monitoringClient;
+  }
+
+  getCloudSQLClient(): SqlInstancesServiceClient {
+    return this.sqlClient;
   }
 }

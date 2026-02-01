@@ -14,6 +14,9 @@ import { analyzeAzurePublicIPs } from '../providers/azure/public-ips';
 import { GCPClient } from '../providers/gcp/client';
 import { analyzeGCEInstances } from '../providers/gcp/compute';
 import { analyzeGCSBuckets } from '../providers/gcp/storage';
+import { analyzeCloudSQLInstances } from '../providers/gcp/cloudsql';
+import { analyzePersistentDisks } from '../providers/gcp/disks';
+import { analyzeStaticIPs } from '../providers/gcp/static-ips';
 import { ScanReport, SavingsOpportunity } from '../types/opportunity';
 import { renderTable } from '../reporters/table';
 import { renderJSON } from '../reporters/json';
@@ -395,19 +398,43 @@ async function scanGCP(options: ScanCommandOptions) {
   info('Analyzing Cloud Storage buckets...');
   const gcsPromise = analyzeGCSBuckets(client);
 
+  info('Analyzing Cloud SQL instances...');
+  const cloudsqlPromise = analyzeCloudSQLInstances(client);
+
+  info('Analyzing Persistent Disks...');
+  const disksPromise = analyzePersistentDisks(client);
+
+  info('Analyzing Static IPs...');
+  const ipsPromise = analyzeStaticIPs(client);
+
   // Wait for all analyzers to complete
-  const [gceOpportunities, gcsOpportunities] = await Promise.all([
+  const [
+    gceOpportunities,
+    gcsOpportunities,
+    cloudsqlOpportunities,
+    disksOpportunities,
+    ipsOpportunities,
+  ] = await Promise.all([
     gcePromise,
     gcsPromise,
+    cloudsqlPromise,
+    disksPromise,
+    ipsPromise,
   ]);
 
   success(`Found ${gceOpportunities.length} Compute Engine opportunities`);
   success(`Found ${gcsOpportunities.length} Cloud Storage opportunities`);
+  success(`Found ${cloudsqlOpportunities.length} Cloud SQL opportunities`);
+  success(`Found ${disksOpportunities.length} Persistent Disk opportunities`);
+  success(`Found ${ipsOpportunities.length} Static IP opportunities`);
 
   // Combine opportunities
   const allOpportunities: SavingsOpportunity[] = [
     ...gceOpportunities,
     ...gcsOpportunities,
+    ...cloudsqlOpportunities,
+    ...disksOpportunities,
+    ...ipsOpportunities,
   ];
 
   // Filter by minimum savings if specified

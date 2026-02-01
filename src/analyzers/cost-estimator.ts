@@ -80,6 +80,17 @@ export const GCS_PRICING = {
   archive: 0.0012,
 };
 
+export const GCP_CLOUDSQL_PRICING: Record<string, number> = {
+  'db-n1-standard-1': 46.72,
+  'db-n1-standard-2': 93.45,
+  'db-n1-standard-4': 186.89,
+  'db-n1-standard-8': 373.79,
+  'db-n1-standard-16': 747.58,
+  'db-custom-1-4096': 35.62,
+  'db-custom-2-8192': 71.23,
+  'db-custom-4-16384': 142.47,
+};
+
 /**
  * Cost estimator with support for both estimate and accurate modes
  */
@@ -181,4 +192,8 @@ export function getGCEMonthlyCost(machineType: string): number {
 export function getGCSMonthlyCost(sizeGB: number, storageClass: string = 'standard'): number {
   const pricePerGB = GCS_PRICING[storageClass as keyof typeof GCS_PRICING] || GCS_PRICING.standard;
   return sizeGB * pricePerGB;
+}
+
+export function getGCPCloudSQLMonthlyCost(tier: string): number {
+  return GCP_CLOUDSQL_PRICING[tier] || 50; // Generic estimate if unknown
 }

@@ -37,7 +37,7 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ **Multi-cloud support** - AWS, Azure, and GCP
 - ✅ **AWS analyzers** - EC2, EBS, RDS, S3, ELB, Elastic IP
 - ✅ **Azure analyzers** - VMs, Managed Disks, Storage, SQL, Public IPs
-- ✅ **GCP analyzers** - Compute Engine, Cloud Storage
+- ✅ **GCP analyzers** - Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs
 - ✅ **🤖 AI-powered explanations** - Get human-readable explanations for why resources are costing money
 - ✅ **💬 Natural language queries** - Ask questions like "What's my biggest cost?" or "Show me idle VMs"
 - ✅ **🔒 Privacy-first AI** - Use local Ollama or cloud OpenAI
@@ -50,7 +50,7 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ Filter by minimum savings amount
 
 **Potential future additions:**
-- More GCP services (Cloud SQL, Cloud Functions, etc.)
+- More GCP services (Cloud Functions, Load Balancers, etc.)
 - Real-time pricing API integration
 - Additional AWS services (Lambda, DynamoDB, CloudFront, etc.)
 - Additional Azure services (App Services, CosmosDB, etc.)

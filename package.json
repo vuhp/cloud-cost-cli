@@ -63,6 +63,7 @@
     "@azure/identity": "^4.13.0",
     "@google-cloud/compute": "^6.7.0",
     "@google-cloud/monitoring": "^5.3.1",
+    "@google-cloud/sql": "^0.24.0",
     "@google-cloud/storage": "^7.18.0",
     "chalk": "^5.3.0",
     "cli-table3": "^0.6.5",
