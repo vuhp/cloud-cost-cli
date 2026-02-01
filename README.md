@@ -260,7 +260,7 @@ Top 5 Savings Opportunities (est. $1,245/month):
 
 Total potential savings: $1,245/month ($14,940/year)
 
-ℹ AI explanations powered by OpenAI GPT-4o-mini (cost: $0.02)
+ℹ AI explanations powered by OpenAI GPT-4o-mini (cost: ~$0.001)
 ```
 
 ---
@@ -270,7 +270,7 @@ Total potential savings: $1,245/month ($14,940/year)
 ### Option 1: OpenAI (Cloud, Paid)
 
 **Pros:** Fast, accurate, works anywhere  
-**Cons:** Costs ~$0.01-0.05 per scan, data sent to OpenAI
+**Cons:** Costs ~$0.001-0.01 per scan (very cheap!), data sent to OpenAI
 
 ```bash
 # Get API key from https://platform.openai.com/api-keys
@@ -446,7 +446,7 @@ A: Only if you use OpenAI for AI features. When you use `--explain` without spec
 **Q: How much do AI features cost?**  
 A: 
 - **Ollama**: Free! Runs locally, no API costs
-- **OpenAI**: ~$0.01-0.05 per scan (GPT-4o-mini). Use `cloud-cost-cli costs` to track spending.
+- **OpenAI**: Very cheap - typically less than $0.001 per scan with GPT-4o-mini (a few operations). Even with hundreds of resources, costs stay under $0.01 per scan. Use `cloud-cost-cli costs` to track your actual spending.
 
 **Q: Can I run this in CI/CD?**  
 A: Yes. Use `--output json` and parse the results to fail builds if savings exceed a threshold.
