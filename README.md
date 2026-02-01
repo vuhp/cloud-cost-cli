@@ -7,6 +7,8 @@
 
 A command-line tool that analyzes your AWS and Azure resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
+**✨ NEW in v0.3.0-beta:** AI-powered explanations and natural language queries!
+
 ---
 
 ## The Problem
@@ -34,6 +36,11 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ **Multi-cloud support** - AWS and Azure
 - ✅ **AWS analyzers** - EC2, EBS, RDS, S3, ELB, Elastic IP
 - ✅ **Azure analyzers** - VMs, Managed Disks, Storage, SQL, Public IPs
+- ✅ **🤖 AI-powered explanations** - Get human-readable explanations for why resources are costing money (beta)
+- ✅ **💬 Natural language queries** - Ask questions like "What's my biggest cost?" or "Show me idle VMs" (beta)
+- ✅ **🔒 Privacy-first AI** - Use local Ollama or cloud OpenAI
+- ✅ **💰 Cost tracking** - Track AI API costs (OpenAI only)
+- ✅ **⚙️ Configuration file** - Save your preferences
 - ✅ Connect via cloud credentials (read-only recommended)
 - ✅ Analyze last 7-30 days of usage
 - ✅ Output top savings opportunities with estimated monthly savings
@@ -44,7 +51,6 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 **Potential future additions:**
 - GCP support (Compute Engine, Cloud Storage, Cloud SQL)
 - Real-time pricing API integration
-- Configuration file support
 - Additional AWS services (Lambda, DynamoDB, CloudFront, etc.)
 - Additional Azure services (App Services, CosmosDB, etc.)
 - Multi-region analysis
@@ -64,15 +70,25 @@ No commitment on timeline - contributions welcome!
 - Cloud credentials:
   - **AWS**: [AWS CLI configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) or environment variables
   - **Azure**: [Azure CLI logged in](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) or environment variables
+- **Optional for AI features**:
+  - OpenAI API key OR
+  - [Ollama](https://ollama.ai) installed locally (free, private, runs on your machine)
 
 **Install via npm:**
 ```bash
 npm install -g cloud-cost-cli
 ```
 
+**Try the beta with AI features:**
+```bash
+npm install -g cloud-cost-cli@beta
+```
+
 ---
 
 ## Usage
+
+### Basic Scan
 
 **AWS scan:**
 ```bash
@@ -86,6 +102,66 @@ export AZURE_SUBSCRIPTION_ID="your-subscription-id"
 
 cloud-cost-cli scan --provider azure --location eastus
 ```
+
+### 🤖 AI-Powered Features (Beta)
+
+**Get AI explanations for opportunities:**
+```bash
+# Using OpenAI (requires API key)
+export OPENAI_API_KEY="sk-..."
+cloud-cost-cli scan --provider aws --region us-east-1 --explain
+
+# Using local Ollama (free, private, no API key needed)
+cloud-cost-cli scan --provider aws --region us-east-1 --explain --ai-provider ollama
+```
+
+**Ask natural language questions:**
+```bash
+# First, run a scan to collect data
+cloud-cost-cli scan --provider aws --region us-east-1
+
+# Then ask questions about your costs
+cloud-cost-cli ask "What's my biggest cost opportunity?"
+cloud-cost-cli ask "Show me all idle EC2 instances"
+cloud-cost-cli ask "How much can I save on storage?"
+cloud-cost-cli ask "Which resources should I optimize first?"
+```
+
+**Configure AI settings (saves preferences):**
+```bash
+# Initialize config file
+cloud-cost-cli config init
+
+# Set AI provider (openai or ollama)
+cloud-cost-cli config set ai.provider ollama
+
+# Set OpenAI API key (if using OpenAI)
+cloud-cost-cli config set ai.apiKey "sk-..."
+
+# Set AI model
+cloud-cost-cli config set ai.model "llama3.1:8b"  # For Ollama
+cloud-cost-cli config set ai.model "gpt-4o-mini"  # For OpenAI
+
+# Set max explanations (how many to explain)
+cloud-cost-cli config set ai.maxExplanations 5
+
+# View your config
+cloud-cost-cli config show
+```
+
+**Track AI costs (OpenAI only):**
+```bash
+# View AI API costs
+cloud-cost-cli costs
+
+# View last 7 days
+cloud-cost-cli costs --days 7
+
+# Clear cost tracking
+cloud-cost-cli costs --clear
+```
+
+### Advanced Options
 
 **Show more opportunities:**
 ```bash
@@ -102,7 +178,7 @@ cloud-cost-cli scan --provider azure --min-savings 50  # Only show opportunities
 cloud-cost-cli scan --provider aws --output json > report.json
 ```
 
-**Example output:**
+**Example output (with AI explanations):**
 ```
 Cloud Cost Optimization Report
 Provider: AWS | Region: us-east-1 | Account: N/A
@@ -118,18 +194,114 @@ Top 5 Savings Opportunities (est. $1,245/month):
 │ 2 │ EBS      │ vol-0xyz789abc                         │ Delete unattached volume (500 GB)                        │ $40.00      │
 ├───┼──────────┼────────────────────────────────────────┼──────────────────────────────────────────────────────────┼─────────────┤
 │ 3 │ RDS      │ mydb-production                        │ Downsize from db.r5.xlarge to db.t3.large (CPU: 15%)    │ $180.00     │
-├───┼──────────┼────────────────────────────────────────┼──────────────────────────────────────────────────────────┼─────────────┤
-│ 4 │ ELB      │ my-old-alb                             │ Delete unused load balancer                              │ $22.00      │
-├───┼──────────┼────────────────────────────────────────┼──────────────────────────────────────────────────────────┼─────────────┤
-│ 5 │ S3       │ logs-bucket-2023                       │ Add lifecycle policy to transition to Glacier            │ $938.00     │
 └───┴──────────┴────────────────────────────────────────┴──────────────────────────────────────────────────────────┴─────────────┘
+
+🤖 AI Explanations:
+
+💡 Opportunity #1: Stop idle instance (CPU: 2%)
+   This EC2 instance is consuming only 2% CPU, indicating it's severely underutilized. 
+   Consider stopping it during off-hours or right-sizing to a smaller instance type.
+   Quick win: Stop it immediately if it's a dev/test server not actively used.
+   Risk: Low - monitor for 24h first to confirm usage patterns.
+
+💡 Opportunity #2: Delete unattached volume (500 GB)
+   This EBS volume isn't attached to any instance but you're still paying for storage.
+   Either delete it if data isn't needed, or create a snapshot first for backup.
+   Quick win: Take a snapshot ($0.05/GB/mo vs $0.08/GB/mo), then delete the volume.
+   Risk: Medium - verify no one needs this data before deleting.
+
+💡 Opportunity #3: Downsize RDS instance
+   Your database is only using 15% CPU on a db.r5.xlarge. You're paying for 4 vCPUs 
+   but only need 1-2. Downsize to db.t3.large (2 vCPUs) and save $180/month.
+   Quick win: Schedule a downsize during your next maintenance window.
+   Risk: Low-Medium - test query performance after resize.
 
 Total potential savings: $1,245/month ($14,940/year)
 
-Summary: 47 resources analyzed | 12 idle | 8 oversized | 5 unused
+ℹ AI explanations powered by OpenAI GPT-4o-mini (cost: $0.02)
+```
 
-💡 Note: Cost estimates based on us-east-1 pricing and may vary by region.
-   For more accurate estimates, actual costs depend on your usage and region.
+---
+
+## AI Features Setup
+
+### Option 1: OpenAI (Cloud, Paid)
+
+**Pros:** Fast, accurate, works anywhere  
+**Cons:** Costs ~$0.01-0.05 per scan, data sent to OpenAI
+
+```bash
+# Get API key from https://platform.openai.com/api-keys
+export OPENAI_API_KEY="sk-..."
+
+# Or save to config
+cloud-cost-cli config set ai.apiKey "sk-..."
+cloud-cost-cli config set ai.provider openai
+```
+
+### Option 2: Ollama (Local, Free)
+
+**Pros:** Free, private (runs on your machine), no API costs  
+**Cons:** Requires ~4GB RAM, slower than OpenAI
+
+```bash
+# Install Ollama
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Pull a model (one-time, ~4GB download)
+ollama pull llama3.1:8b
+
+# Configure cloud-cost-cli
+cloud-cost-cli config set ai.provider ollama
+cloud-cost-cli config set ai.model "llama3.1:8b"
+
+# Use it
+cloud-cost-cli scan --provider aws --region us-east-1 --explain
+```
+
+**Recommended Ollama models:**
+- `llama3.1:8b` - Best balance (4GB RAM, good quality)
+- `llama3.2:3b` - Faster, less RAM (2GB, slightly lower quality)
+- `mistral:7b` - Alternative, similar to llama3.1
+
+---
+
+## Configuration File
+
+**Location:** `~/.cloud-cost-cli.json`
+
+**Example config:**
+```json
+{
+  "ai": {
+    "provider": "ollama",
+    "model": "llama3.1:8b",
+    "maxExplanations": 5,
+    "cache": {
+      "enabled": true,
+      "ttlDays": 7
+    }
+  },
+  "scan": {
+    "defaultProvider": "aws",
+    "defaultRegion": "us-east-1",
+    "defaultTop": 5,
+    "minSavings": 10
+  },
+  "aws": {
+    "profile": "default",
+    "region": "us-east-1"
+  }
+}
+```
+
+**Manage config:**
+```bash
+cloud-cost-cli config init        # Create config file
+cloud-cost-cli config show        # View current config
+cloud-cost-cli config get ai.provider    # Get specific value
+cloud-cost-cli config set ai.provider ollama  # Set value
+cloud-cost-cli config path        # Show config file location
 ```
 
 ---
@@ -208,6 +380,8 @@ MIT License - see [LICENSE](LICENSE)
 - [Commander.js](https://github.com/tj/commander.js) - CLI framework
 - [cli-table3](https://github.com/cli-table/cli-table3) - Terminal tables
 - [Chalk](https://github.com/chalk/chalk) - Terminal styling
+- [OpenAI API](https://platform.openai.com/) - AI explanations
+- [Ollama](https://ollama.ai) - Local AI models
 
 ---
 
@@ -224,8 +398,19 @@ A: Read-only permissions for each cloud provider:
 **Q: How accurate are the savings estimates?**  
 A: Estimates are based on current pricing and usage patterns. Actual savings may vary by region and your specific pricing agreements (Reserved Instances, Savings Plans, etc.).
 
+**Q: Is my data sent to OpenAI?**  
+A: Only if you use `--ai-provider openai` (the default). Resource metadata and recommendations are sent to OpenAI's API to generate explanations. If you want complete privacy, use `--ai-provider ollama` which runs 100% locally on your machine.
+
+**Q: How much do AI features cost?**  
+A: 
+- **Ollama**: Free! Runs locally, no API costs
+- **OpenAI**: ~$0.01-0.05 per scan (GPT-4o-mini). Use `cloud-cost-cli costs` to track spending.
+
 **Q: Can I run this in CI/CD?**  
 A: Yes. Use `--output json` and parse the results to fail builds if savings exceed a threshold.
+
+**Q: Do I need AI features to use the tool?**  
+A: No! AI features are completely optional. The core cost scanning works without any AI setup.
 
 ---
 
