@@ -71,11 +71,15 @@
     "dayjs": "^1.11.13",
     "ini": "^6.0.0",
     "ollama": "^0.6.3",
-    "openai": "^6.17.0"
+    "openai": "^6.17.0",
+    "papaparse": "^5.5.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/ini": "^4.1.1",
     "@types/node": "^22.10.5",
+    "@types/papaparse": "^5.5.2",
+    "@types/xlsx": "^0.0.35",
     "@typescript-eslint/eslint-plugin": "^8.19.1",
     "@typescript-eslint/parser": "^8.19.1",
     "@vitest/ui": "^1.6.1",
