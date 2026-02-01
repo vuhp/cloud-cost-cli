@@ -226,8 +226,8 @@ async function scanAzure(options: ScanCommandOptions) {
   // Test Azure credentials before scanning
   try {
     await client.testConnection();
-  } catch (error: any) {
-    error(error.message);
+  } catch (err: any) {
+    error(err.message);
     process.exit(1);
   }
   
