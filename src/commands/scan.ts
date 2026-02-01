@@ -20,10 +20,14 @@ import { analyzeStaticIPs } from '../providers/gcp/static-ips';
 import { ScanReport, SavingsOpportunity } from '../types/opportunity';
 import { renderTable } from '../reporters/table';
 import { renderJSON } from '../reporters/json';
+import { exportToCSV } from '../reporters/csv';
+import { exportToExcel } from '../reporters/excel';
 import { error, info, success } from '../utils/logger';
 import { AIService } from '../services/ai';
 import { saveScanCache } from './ask';
 import { ConfigLoader } from '../utils/config';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface ScanCommandOptions {
   provider: string;
@@ -212,8 +216,26 @@ async function scanAWS(options: ScanCommandOptions) {
     // Save scan cache for natural language queries
     saveScanCache(options.provider, options.region, report);
     
+    // Handle output format
     if (options.output === 'json') {
       renderJSON(report);
+    } else if (options.output === 'csv') {
+      const csv = exportToCSV(report.opportunities, { includeMetadata: true });
+      const filename = `cloud-cost-report-${options.provider}-${Date.now()}.csv`;
+      fs.writeFileSync(filename, csv);
+      success(`Report saved to ${filename}`);
+      console.log(`\nTotal opportunities: ${report.opportunities.length}`);
+      console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
+    } else if (options.output === 'excel' || options.output === 'xlsx') {
+      const buffer = exportToExcel(report.opportunities, { 
+        includeMetadata: true,
+        includeSummarySheet: true,
+      });
+      const filename = `cloud-cost-report-${options.provider}-${Date.now()}.xlsx`;
+      fs.writeFileSync(filename, buffer);
+      success(`Report saved to ${filename}`);
+      console.log(`\nTotal opportunities: ${report.opportunities.length}`);
+      console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
     } else {
       await renderTable(report, topN, aiService);
     }
@@ -371,8 +393,26 @@ async function scanAzure(options: ScanCommandOptions) {
   // Save scan cache for natural language queries
   saveScanCache('azure', client.location, report);
   
+  // Handle output format
   if (options.output === 'json') {
     renderJSON(report);
+  } else if (options.output === 'csv') {
+    const csv = exportToCSV(report.opportunities, { includeMetadata: true });
+    const filename = `cloud-cost-report-azure-${Date.now()}.csv`;
+    fs.writeFileSync(filename, csv);
+    success(`Report saved to ${filename}`);
+    console.log(`\nTotal opportunities: ${report.opportunities.length}`);
+    console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
+  } else if (options.output === 'excel' || options.output === 'xlsx') {
+    const buffer = exportToExcel(report.opportunities, { 
+      includeMetadata: true,
+      includeSummarySheet: true,
+    });
+    const filename = `cloud-cost-report-azure-${Date.now()}.xlsx`;
+    fs.writeFileSync(filename, buffer);
+    success(`Report saved to ${filename}`);
+    console.log(`\nTotal opportunities: ${report.opportunities.length}`);
+    console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
   } else {
     await renderTable(report, topN, aiService);
   }
@@ -524,8 +564,26 @@ async function scanGCP(options: ScanCommandOptions) {
   // Save scan cache for natural language queries
   saveScanCache('gcp', client.region, report);
 
+  // Handle output format
   if (options.output === 'json') {
     renderJSON(report);
+  } else if (options.output === 'csv') {
+    const csv = exportToCSV(report.opportunities, { includeMetadata: true });
+    const filename = `cloud-cost-report-gcp-${Date.now()}.csv`;
+    fs.writeFileSync(filename, csv);
+    success(`Report saved to ${filename}`);
+    console.log(`\nTotal opportunities: ${report.opportunities.length}`);
+    console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
+  } else if (options.output === 'excel' || options.output === 'xlsx') {
+    const buffer = exportToExcel(report.opportunities, { 
+      includeMetadata: true,
+      includeSummarySheet: true,
+    });
+    const filename = `cloud-cost-report-gcp-${Date.now()}.xlsx`;
+    fs.writeFileSync(filename, buffer);
+    success(`Report saved to ${filename}`);
+    console.log(`\nTotal opportunities: ${report.opportunities.length}`);
+    console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
   } else {
     await renderTable(report, topN, aiService);
   }
