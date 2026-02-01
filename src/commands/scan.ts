@@ -7,6 +7,7 @@ import { analyzeELBs } from '../providers/aws/elb';
 import { analyzeElasticIPs } from '../providers/aws/eip';
 import { analyzeLambdaFunctions } from '../providers/aws/lambda';
 import { analyzeNATGateways } from '../providers/aws/nat-gateway';
+import { analyzeDynamoDBTables } from '../providers/aws/dynamodb';
 import { AzureClient } from '../providers/azure/client';
 import { analyzeAzureVMs } from '../providers/azure/vms';
 import { analyzeAzureDisks } from '../providers/azure/disks';
@@ -105,6 +106,9 @@ async function scanAWS(options: ScanCommandOptions) {
     info('Analyzing NAT Gateways...');
     const natGatewayPromise = analyzeNATGateways(client);
 
+    info('Analyzing DynamoDB tables...');
+    const dynamodbPromise = analyzeDynamoDBTables(client);
+
     // Wait for all analyzers to complete
     const [
       ec2Opportunities,
@@ -115,6 +119,7 @@ async function scanAWS(options: ScanCommandOptions) {
       eipOpportunities,
       lambdaOpportunities,
       natGatewayOpportunities,
+      dynamodbOpportunities,
     ] = await Promise.all([
       ec2Promise,
       ebsPromise,
@@ -124,6 +129,7 @@ async function scanAWS(options: ScanCommandOptions) {
       eipPromise,
       lambdaPromise,
       natGatewayPromise,
+      dynamodbPromise,
     ]);
 
     success(`Found ${ec2Opportunities.length} EC2 opportunities`);
@@ -134,6 +140,7 @@ async function scanAWS(options: ScanCommandOptions) {
     success(`Found ${eipOpportunities.length} EIP opportunities`);
     success(`Found ${lambdaOpportunities.length} Lambda opportunities`);
     success(`Found ${natGatewayOpportunities.length} NAT Gateway opportunities`);
+    success(`Found ${dynamodbOpportunities.length} DynamoDB opportunities`);
 
     // Combine opportunities
     const allOpportunities: SavingsOpportunity[] = [
@@ -145,6 +152,7 @@ async function scanAWS(options: ScanCommandOptions) {
       ...eipOpportunities,
       ...lambdaOpportunities,
       ...natGatewayOpportunities,
+      ...dynamodbOpportunities,
     ];
 
     // Filter by minimum savings if specified
