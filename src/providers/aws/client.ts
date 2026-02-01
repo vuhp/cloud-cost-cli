@@ -7,6 +7,7 @@ import { ElasticLoadBalancingV2Client } from '@aws-sdk/client-elastic-load-balan
 import { LambdaClient } from '@aws-sdk/client-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { CloudWatchLogsClient } from '@aws-sdk/client-cloudwatch-logs';
+import { ElastiCacheClient } from '@aws-sdk/client-elasticache';
 import { fromIni, fromEnv } from '@aws-sdk/credential-providers';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -27,6 +28,7 @@ export class AWSClient {
   private lambda: LambdaClient;
   private dynamodb: DynamoDBClient;
   private cloudwatchLogs: CloudWatchLogsClient;
+  private elasticache: ElastiCacheClient;
   public region: string;
   public profile: string;
 
@@ -50,6 +52,7 @@ export class AWSClient {
     this.lambda = new LambdaClient({ region: this.region, credentials });
     this.dynamodb = new DynamoDBClient({ region: this.region, credentials });
     this.cloudwatchLogs = new CloudWatchLogsClient({ region: this.region, credentials });
+    this.elasticache = new ElastiCacheClient({ region: this.region, credentials });
   }
 
   private getProfileRegion(profileName: string): string | null {
@@ -118,5 +121,9 @@ export class AWSClient {
 
   getCloudWatchLogsClient() {
     return this.cloudwatchLogs;
+  }
+
+  getElastiCacheClient() {
+    return this.elasticache;
   }
 }

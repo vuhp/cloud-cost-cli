@@ -10,6 +10,7 @@ import { analyzeNATGateways } from '../providers/aws/nat-gateway';
 import { analyzeDynamoDBTables } from '../providers/aws/dynamodb';
 import { analyzeCloudWatchLogs } from '../providers/aws/cloudwatch-logs';
 import { analyzeSnapshots } from '../providers/aws/snapshots';
+import { analyzeElastiCache } from '../providers/aws/elasticache';
 import { AzureClient } from '../providers/azure/client';
 import { analyzeAzureVMs } from '../providers/azure/vms';
 import { analyzeAzureDisks } from '../providers/azure/disks';
@@ -121,6 +122,9 @@ async function scanAWS(options: ScanCommandOptions) {
     info('Analyzing Snapshots...');
     const snapshotsPromise = analyzeSnapshots(client);
 
+    info('Analyzing ElastiCache clusters...');
+    const elasticachePromise = analyzeElastiCache(client);
+
     // Wait for all analyzers to complete
     const [
       ec2Opportunities,
@@ -134,6 +138,7 @@ async function scanAWS(options: ScanCommandOptions) {
       dynamodbOpportunities,
       cloudwatchLogsOpportunities,
       snapshotsOpportunities,
+      elasticacheOpportunities,
     ] = await Promise.all([
       ec2Promise,
       ebsPromise,
@@ -146,6 +151,7 @@ async function scanAWS(options: ScanCommandOptions) {
       dynamodbPromise,
       cloudwatchLogsPromise,
       snapshotsPromise,
+      elasticachePromise,
     ]);
 
     success(`Found ${ec2Opportunities.length} EC2 opportunities`);
@@ -159,6 +165,7 @@ async function scanAWS(options: ScanCommandOptions) {
     success(`Found ${dynamodbOpportunities.length} DynamoDB opportunities`);
     success(`Found ${cloudwatchLogsOpportunities.length} CloudWatch Logs opportunities`);
     success(`Found ${snapshotsOpportunities.length} Snapshot opportunities`);
+    success(`Found ${elasticacheOpportunities.length} ElastiCache opportunities`);
 
     // Combine opportunities
     const allOpportunities: SavingsOpportunity[] = [
@@ -173,6 +180,7 @@ async function scanAWS(options: ScanCommandOptions) {
       ...dynamodbOpportunities,
       ...cloudwatchLogsOpportunities,
       ...snapshotsOpportunities,
+      ...elasticacheOpportunities,
     ];
 
     // Filter by minimum savings if specified
