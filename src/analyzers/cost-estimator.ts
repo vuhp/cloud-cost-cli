@@ -59,6 +59,27 @@ export const ELB_PRICING = {
 
 export const EIP_PRICING_HOURLY = 0.005;
 
+// GCP Pricing (based on us-central1, Jan 2026)
+export const GCE_PRICING: Record<string, number> = {
+  'e2-micro': 6.11,
+  'e2-small': 12.23,
+  'e2-medium': 24.45,
+  'n1-standard-1': 24.27,
+  'n1-standard-2': 48.54,
+  'n1-standard-4': 97.09,
+  'n2-standard-2': 58.99,
+  'n2-standard-4': 117.98,
+  'c2-standard-4': 152.39,
+  'c2-standard-8': 304.78,
+};
+
+export const GCS_PRICING = {
+  standard: 0.020,
+  nearline: 0.010,
+  coldline: 0.004,
+  archive: 0.0012,
+};
+
 /**
  * Cost estimator with support for both estimate and accurate modes
  */
@@ -150,4 +171,14 @@ export function getELBMonthlyCost(type: 'alb' | 'nlb' | 'clb' = 'alb'): number {
 
 export function getEIPMonthlyCost(): number {
   return EIP_PRICING_HOURLY * 730;
+}
+
+// GCP cost helpers
+export function getGCEMonthlyCost(machineType: string): number {
+  return GCE_PRICING[machineType] || 50; // Generic estimate if unknown
+}
+
+export function getGCSMonthlyCost(sizeGB: number, storageClass: string = 'standard'): number {
+  const pricePerGB = GCS_PRICING[storageClass as keyof typeof GCS_PRICING] || GCS_PRICING.standard;
+  return sizeGB * pricePerGB;
 }

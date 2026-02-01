@@ -5,9 +5,10 @@
 
 **Optimize your cloud spend in seconds.**
 
-A command-line tool that analyzes your AWS and Azure resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
+A command-line tool that analyzes your AWS, Azure, and GCP resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
-**✨ NEW in v0.3.0:** AI-powered explanations and natural language queries!
+**✨ NEW in v0.4.0:** GCP support (Compute Engine + Cloud Storage)!  
+**✨ v0.3.0:** AI-powered explanations and natural language queries!
 
 ---
 
@@ -20,7 +21,7 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 `cloud-cost-cli` connects to your cloud accounts, analyzes resource usage and billing data, and outputs a ranked list of actionable savings opportunities — all in your terminal, in under 60 seconds.
 
 **What it finds:**
-- Idle VMs/EC2 instances (low CPU, stopped but still billed)
+- Idle VMs/Compute instances (low CPU, stopped but still billed)
 - Unattached volumes, disks, and snapshots
 - Oversized database instances (RDS, Azure SQL)
 - Old load balancers with no traffic
@@ -33,9 +34,10 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 ## Features
 
 **Current capabilities:**
-- ✅ **Multi-cloud support** - AWS and Azure
+- ✅ **Multi-cloud support** - AWS, Azure, and GCP
 - ✅ **AWS analyzers** - EC2, EBS, RDS, S3, ELB, Elastic IP
 - ✅ **Azure analyzers** - VMs, Managed Disks, Storage, SQL, Public IPs
+- ✅ **GCP analyzers** - Compute Engine, Cloud Storage
 - ✅ **🤖 AI-powered explanations** - Get human-readable explanations for why resources are costing money
 - ✅ **💬 Natural language queries** - Ask questions like "What's my biggest cost?" or "Show me idle VMs"
 - ✅ **🔒 Privacy-first AI** - Use local Ollama or cloud OpenAI
@@ -46,10 +48,9 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ Output top savings opportunities with estimated monthly savings
 - ✅ Export report as JSON or terminal table
 - ✅ Filter by minimum savings amount
-- ✅ Comprehensive test suite (84 tests)
 
 **Potential future additions:**
-- GCP support (Compute Engine, Cloud Storage, Cloud SQL)
+- More GCP services (Cloud SQL, Cloud Functions, etc.)
 - Real-time pricing API integration
 - Additional AWS services (Lambda, DynamoDB, CloudFront, etc.)
 - Additional Azure services (App Services, CosmosDB, etc.)
@@ -75,6 +76,10 @@ No commitment on timeline - contributions welcome!
     - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) (`az login`) OR
     - Service Principal (env vars: `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`) OR
     - Managed Identity (for Azure VMs)
+  - **GCP**:
+    - [gcloud CLI](https://cloud.google.com/sdk/docs/install) (`gcloud auth application-default login`) OR
+    - Service Account JSON key (env var: `GOOGLE_APPLICATION_CREDENTIALS`) OR
+    - Compute Engine default credentials (for GCP VMs)
 - **Optional for AI features**:
   - OpenAI API key OR
   - [Ollama](https://ollama.ai) installed locally (free, private, runs on your machine)
@@ -108,6 +113,23 @@ export AZURE_CLIENT_SECRET="your-secret"
 export AZURE_TENANT_ID="your-tenant-id"
 export AZURE_SUBSCRIPTION_ID="your-subscription-id"
 cloud-cost-cli scan --provider azure --location eastus
+```
+
+**GCP scan:**
+```bash
+# Option 1: gcloud CLI (easiest for local use)
+gcloud auth application-default login
+gcloud config set project YOUR_PROJECT_ID
+export GCP_PROJECT_ID="your-project-id"
+cloud-cost-cli scan --provider gcp --region us-central1
+
+# Option 2: Service Account (recommended for CI/CD and automation)
+export GOOGLE_APPLICATION_CREDENTIALS="/path/to/keyfile.json"
+export GCP_PROJECT_ID="your-project-id"
+cloud-cost-cli scan --provider gcp --region us-central1
+
+# Option 3: CLI flag
+cloud-cost-cli scan --provider gcp --project-id your-project-id --region us-central1
 ```
 
 **How to create Azure Service Principal:**

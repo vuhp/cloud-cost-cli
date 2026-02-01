@@ -10,16 +10,17 @@ const program = new Command();
 program
   .name('cloud-cost-cli')
   .description('Optimize your cloud spend in seconds')
-  .version('0.3.0-beta.1');
+  .version('0.4.0');
 
 program
   .command('scan')
   .description('Scan cloud account for cost savings')
-  .option('--provider <aws|azure>', 'Cloud provider', 'aws')
-  .option('--region <region>', 'AWS region (e.g., us-east-1)')
+  .option('--provider <aws|azure|gcp>', 'Cloud provider', 'aws')
+  .option('--region <region>', 'Cloud region (e.g., us-east-1 for AWS, us-central1 for GCP)')
   .option('--profile <profile>', 'AWS profile name', 'default')
   .option('--subscription-id <id>', 'Azure subscription ID')
   .option('--location <location>', 'Azure location filter (e.g., eastus, westus2) - optional, scans all if omitted')
+  .option('--project-id <id>', 'GCP project ID')
   .option('--top <N>', 'Show top N opportunities', '5')
   .option('--output <table|json|markdown>', 'Output format', 'table')
   .option('--days <N>', 'Analysis period in days', '30')
