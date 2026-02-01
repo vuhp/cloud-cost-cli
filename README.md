@@ -352,16 +352,21 @@ cloud-cost-cli config path        # Show config file location
 
 **How cost estimates work:**
 
-Cost savings are estimated using AWS on-demand pricing for **us-east-1** (January 2026). These are approximations to help you prioritize optimization efforts.
+Cost savings are estimated using standard pay-as-you-go pricing (January 2026):
+- **AWS:** us-east-1
+- **Azure:** East US
+- **GCP:** us-central1
+
+These are approximations to help you prioritize optimization efforts.
 
 **Important notes:**
-- 💵 Actual costs vary by region (e.g., ap-southeast-1 may be 10-15% higher)
-- 📊 Estimates don't include Reserved Instances, Savings Plans, or spot discounts
-- 🔄 AWS pricing changes periodically
-- ⚙️ Additional costs like data transfer and storage operations not included
+- 💵 Actual costs vary by region (some regions are 10-30% higher)
+- 📊 Estimates don't include Reserved Instances, Savings Plans, or Committed Use Discounts
+- 🔄 Cloud pricing changes periodically
+- ⚙️ Additional costs like data transfer and operations not included
 
 **For the most accurate estimates:**
-- Cross-reference with your AWS Cost Explorer or Azure Cost Management
+- Cross-reference with your cloud provider's cost management tools (AWS Cost Explorer, Azure Cost Management, GCP Cloud Billing)
 - Consider estimates as directional guidance, not exact amounts
 - Real-time pricing API integration coming in a future release
 
