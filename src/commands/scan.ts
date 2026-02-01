@@ -11,6 +11,7 @@ import { analyzeDynamoDBTables } from '../providers/aws/dynamodb';
 import { analyzeCloudWatchLogs } from '../providers/aws/cloudwatch-logs';
 import { analyzeSnapshots } from '../providers/aws/snapshots';
 import { analyzeElastiCache } from '../providers/aws/elasticache';
+import { analyzeECS } from '../providers/aws/ecs';
 import { AzureClient } from '../providers/azure/client';
 import { analyzeAzureVMs } from '../providers/azure/vms';
 import { analyzeAzureDisks } from '../providers/azure/disks';
@@ -125,6 +126,9 @@ async function scanAWS(options: ScanCommandOptions) {
     info('Analyzing ElastiCache clusters...');
     const elasticachePromise = analyzeElastiCache(client);
 
+    info('Analyzing ECS/Fargate...');
+    const ecsPromise = analyzeECS(client);
+
     // Wait for all analyzers to complete
     const [
       ec2Opportunities,
@@ -139,6 +143,7 @@ async function scanAWS(options: ScanCommandOptions) {
       cloudwatchLogsOpportunities,
       snapshotsOpportunities,
       elasticacheOpportunities,
+      ecsOpportunities,
     ] = await Promise.all([
       ec2Promise,
       ebsPromise,
@@ -152,6 +157,7 @@ async function scanAWS(options: ScanCommandOptions) {
       cloudwatchLogsPromise,
       snapshotsPromise,
       elasticachePromise,
+      ecsPromise,
     ]);
 
     success(`Found ${ec2Opportunities.length} EC2 opportunities`);
@@ -166,6 +172,7 @@ async function scanAWS(options: ScanCommandOptions) {
     success(`Found ${cloudwatchLogsOpportunities.length} CloudWatch Logs opportunities`);
     success(`Found ${snapshotsOpportunities.length} Snapshot opportunities`);
     success(`Found ${elasticacheOpportunities.length} ElastiCache opportunities`);
+    success(`Found ${ecsOpportunities.length} ECS/Fargate opportunities`);
 
     // Combine opportunities
     const allOpportunities: SavingsOpportunity[] = [
@@ -181,6 +188,7 @@ async function scanAWS(options: ScanCommandOptions) {
       ...cloudwatchLogsOpportunities,
       ...snapshotsOpportunities,
       ...elasticacheOpportunities,
+      ...ecsOpportunities,
     ];
 
     // Filter by minimum savings if specified
