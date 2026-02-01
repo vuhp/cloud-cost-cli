@@ -4,6 +4,7 @@ import { CostExplorerClient } from '@aws-sdk/client-cost-explorer';
 import { RDSClient } from '@aws-sdk/client-rds';
 import { S3Client } from '@aws-sdk/client-s3';
 import { ElasticLoadBalancingV2Client } from '@aws-sdk/client-elastic-load-balancing-v2';
+import { LambdaClient } from '@aws-sdk/client-lambda';
 import { fromIni, fromEnv } from '@aws-sdk/credential-providers';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -21,6 +22,7 @@ export class AWSClient {
   private rds: RDSClient;
   private s3: S3Client;
   private elb: ElasticLoadBalancingV2Client;
+  private lambda: LambdaClient;
   public region: string;
   public profile: string;
 
@@ -41,6 +43,7 @@ export class AWSClient {
     this.rds = new RDSClient({ region: this.region, credentials });
     this.s3 = new S3Client({ region: this.region, credentials });
     this.elb = new ElasticLoadBalancingV2Client({ region: this.region, credentials });
+    this.lambda = new LambdaClient({ region: this.region, credentials });
   }
 
   private getProfileRegion(profileName: string): string | null {
@@ -97,5 +100,9 @@ export class AWSClient {
 
   getELBClient() {
     return this.elb;
+  }
+
+  getLambdaClient() {
+    return this.lambda;
   }
 }
