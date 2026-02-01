@@ -15,6 +15,9 @@ import { analyzeAzureDisks } from '../providers/azure/disks';
 import { analyzeAzureStorage } from '../providers/azure/storage';
 import { analyzeAzureSQL } from '../providers/azure/sql';
 import { analyzeAzurePublicIPs } from '../providers/azure/public-ips';
+import { analyzeAppServicePlans } from '../providers/azure/app-services';
+import { analyzeAzureFunctions } from '../providers/azure/functions';
+import { analyzeCosmosDB } from '../providers/azure/cosmosdb';
 import { GCPClient } from '../providers/gcp/client';
 import { analyzeGCEInstances } from '../providers/gcp/compute';
 import { analyzeGCSBuckets } from '../providers/gcp/storage';
@@ -293,6 +296,15 @@ async function scanAzure(options: ScanCommandOptions) {
   info('Analyzing Public IP Addresses...');
   const ipPromise = analyzeAzurePublicIPs(client);
 
+  info('Analyzing App Service Plans...');
+  const appServicePromise = analyzeAppServicePlans(client);
+
+  info('Analyzing Azure Functions...');
+  const functionsPromise = analyzeAzureFunctions(client);
+
+  info('Analyzing CosmosDB...');
+  const cosmosdbPromise = analyzeCosmosDB(client);
+
   // Wait for all analyzers to complete
   const [
     vmOpportunities,
@@ -300,12 +312,18 @@ async function scanAzure(options: ScanCommandOptions) {
     storageOpportunities,
     sqlOpportunities,
     ipOpportunities,
+    appServiceOpportunities,
+    functionsOpportunities,
+    cosmosdbOpportunities,
   ] = await Promise.all([
     vmPromise,
     diskPromise,
     storagePromise,
     sqlPromise,
     ipPromise,
+    appServicePromise,
+    functionsPromise,
+    cosmosdbPromise,
   ]);
 
   success(`Found ${vmOpportunities.length} VM opportunities`);
@@ -313,6 +331,9 @@ async function scanAzure(options: ScanCommandOptions) {
   success(`Found ${storageOpportunities.length} Storage opportunities`);
   success(`Found ${sqlOpportunities.length} SQL opportunities`);
   success(`Found ${ipOpportunities.length} Public IP opportunities`);
+  success(`Found ${appServiceOpportunities.length} App Service opportunities`);
+  success(`Found ${functionsOpportunities.length} Azure Functions opportunities`);
+  success(`Found ${cosmosdbOpportunities.length} CosmosDB opportunities`);
 
   // Combine opportunities
   const allOpportunities: SavingsOpportunity[] = [
@@ -321,6 +342,9 @@ async function scanAzure(options: ScanCommandOptions) {
     ...storageOpportunities,
     ...sqlOpportunities,
     ...ipOpportunities,
+    ...appServiceOpportunities,
+    ...functionsOpportunities,
+    ...cosmosdbOpportunities,
   ];
 
   // Filter by minimum savings if specified
