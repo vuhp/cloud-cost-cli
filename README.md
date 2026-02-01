@@ -419,7 +419,7 @@ A: Read-only permissions for each cloud provider:
 A: Estimates are based on current pricing and usage patterns. Actual savings may vary by region and your specific pricing agreements (Reserved Instances, Savings Plans, etc.).
 
 **Q: Is my data sent to OpenAI?**  
-A: Only if you use `--ai-provider openai` (the default). Resource metadata and recommendations are sent to OpenAI's API to generate explanations. If you want complete privacy, use `--ai-provider ollama` which runs 100% locally on your machine.
+A: Only if you use OpenAI for AI features. When you use `--explain` without specifying `--ai-provider`, it defaults to OpenAI and requires an API key. Resource metadata and recommendations are sent to OpenAI's API to generate explanations. If you want complete privacy, use `--ai-provider ollama` (or set it in config) which runs 100% locally on your machine.
 
 **Q: How much do AI features cost?**  
 A: 
