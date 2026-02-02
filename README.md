@@ -7,7 +7,8 @@
 
 A command-line tool that analyzes your AWS, Azure, and GCP resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
-**✨ NEW in v0.4.0:** Full GCP support with 5 analyzers (Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs)!  
+**✨ NEW in v0.5.0:** CSV and Excel export formats — perfect for sharing reports with your team!  
+**✨ v0.4.0:** Full GCP support with 5 analyzers (Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs)  
 **✨ v0.3.0:** AI-powered explanations and natural language queries!
 
 ---
@@ -40,13 +41,14 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ **GCP analyzers** - Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs
 - ✅ **🤖 AI-powered explanations** - Get human-readable explanations for why resources are costing money
 - ✅ **💬 Natural language queries** - Ask questions like "What's my biggest cost?" or "Show me idle VMs"
+- ✅ **📊 CSV & Excel export** - Export reports for sharing and analysis (NEW in v0.5.0!)
 - ✅ **🔒 Privacy-first AI** - Use local Ollama or cloud OpenAI
 - ✅ **💰 Cost tracking** - Track AI API costs (OpenAI only)
 - ✅ **⚙️ Configuration file** - Save your preferences
 - ✅ Connect via cloud credentials (read-only recommended)
 - ✅ Analyze last 7-30 days of usage
 - ✅ Output top savings opportunities with estimated monthly savings
-- ✅ Export report as JSON or terminal table
+- ✅ Export report as JSON, CSV, Excel, or terminal table
 - ✅ Filter by minimum savings amount
 
 **Potential future additions:**
@@ -217,8 +219,35 @@ cloud-cost-cli scan --provider azure --min-savings 50  # Only show opportunities
 
 **Specify output format:**
 ```bash
-cloud-cost-cli scan --provider aws --output json > report.json
+# Terminal table (default)
+cloud-cost-cli scan --provider aws
+
+# JSON format (for programmatic use)
+cloud-cost-cli scan --provider aws --format json --output report.json
+
+# CSV format (for spreadsheets and data analysis)
+cloud-cost-cli scan --provider aws --format csv --output savings.csv
+
+# Excel format (rich formatting with summary sheet)
+cloud-cost-cli scan --provider aws --format excel --output report.xlsx
 ```
+
+**Export Formats:**
+
+| Format | Best For | Features |
+|--------|----------|----------|
+| **table** (default) | Terminal viewing | Color-coded, easy to read |
+| **json** | API integration | Complete data structure |
+| **csv** | Data analysis | Import to Excel, Google Sheets |
+| **excel** | Reports & sharing | Summary sheet, rich formatting |
+
+**Excel Export Features:**
+- Summary worksheet with total savings by category
+- Detailed opportunities worksheet with all findings
+- Color-coded categories and confidence levels
+- Formatted currency and auto-sized columns
+- Frozen headers for easy scrolling
+- Professional look, ready to share with management
 
 **Example output (with AI explanations):**
 ```

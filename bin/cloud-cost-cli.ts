@@ -22,7 +22,7 @@ program
   .option('--location <location>', 'Azure location filter (e.g., eastus, westus2) - optional, scans all if omitted')
   .option('--project-id <id>', 'GCP project ID')
   .option('--top <N>', 'Show top N opportunities', '5')
-  .option('--output <table|json|markdown>', 'Output format', 'table')
+  .option('--output <format>', 'Output format: table, json, csv, excel (or xlsx)', 'table')
   .option('--days <N>', 'Analysis period in days', '30')
   .option('--min-savings <amount>', 'Filter by minimum savings ($/month)')
   .option('--accurate', 'Use real-time pricing from AWS (slower but more accurate)')
