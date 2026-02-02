@@ -35,7 +35,7 @@ export async function analyzeCosmosDB(
       const capabilities = account.capabilities || [];
 
       // Check if serverless
-      const isServerless = capabilities.some(cap => 
+      const isServerless = capabilities.some((cap: any) => 
         cap.name === 'EnableServerless'
       );
 

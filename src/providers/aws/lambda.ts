@@ -2,6 +2,7 @@ import { AWSClient } from './client';
 import { SavingsOpportunity } from '../../types/opportunity';
 import { CloudWatchClient, GetMetricStatisticsCommand } from '@aws-sdk/client-cloudwatch';
 import { LambdaClient, ListFunctionsCommand, GetFunctionCommand } from '@aws-sdk/client-lambda';
+import { isPermissionError, getPermissionErrorMessage } from '../../utils/analyzer-errors';
 import dayjs from 'dayjs';
 
 /**
@@ -125,7 +126,12 @@ export async function analyzeLambdaFunctions(
 
     return opportunities;
   } catch (error: any) {
-    console.error('Error analyzing Lambda functions:', error.message);
+    if (isPermissionError(error)) {
+      console.warn(getPermissionErrorMessage(error, 'Lambda functions'));
+      console.warn('   Continuing with other analyzers...');
+    } else {
+      console.error('Error analyzing Lambda functions:', error.message);
+    }
     return opportunities;
   }
 }
