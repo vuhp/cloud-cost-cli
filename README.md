@@ -1,6 +1,6 @@
 # cloud-cost-cli
 
-[![npm version](https://badge.fury.io/js/cloud-cost-cli.svg)](https://www.npmjs.com/package/cloud-cost-cli)
+[![npm version](https://img.shields.io/npm/v/cloud-cost-cli.svg)](https://www.npmjs.com/package/cloud-cost-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Optimize your cloud spend in seconds.**
