@@ -33,6 +33,7 @@ import { renderTable } from '../reporters/table';
 import { renderJSON } from '../reporters/json';
 import { exportToCSV } from '../reporters/csv';
 import { exportToExcel } from '../reporters/excel';
+import { exportToHtml } from '../reporters/html';
 import { error, info, success } from '../utils/logger';
 import { AIService } from '../services/ai';
 import { saveScanCache } from './ask';
@@ -296,6 +297,30 @@ async function scanAWS(options: ScanCommandOptions) {
       success(`Report saved to ${filename}`);
       console.log(`\nTotal opportunities: ${report.opportunities.length}`);
       console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
+    } else if (options.output === 'html') {
+      const html = exportToHtml(report.opportunities, {
+        provider: options.provider,
+        region: options.region,
+        totalSavings: report.totalPotentialSavings,
+        scanDate: new Date(),
+      }, {
+        includeCharts: true,
+        theme: 'light',
+      });
+      const filename = `cloud-cost-report-${options.provider}-${Date.now()}.html`;
+      fs.writeFileSync(filename, html);
+      success(`Report saved to ${filename}`);
+      console.log(`\nTotal opportunities: ${report.opportunities.length}`);
+      console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
+      
+      // Try to open in browser
+      try {
+        const open = await import('open');
+        await open.default(filename);
+        info(`Opening report in your browser...`);
+      } catch (err) {
+        info(`Open the file manually: ${filename}`);
+      }
     } else {
       await renderTable(report, topN, aiService);
     }
@@ -494,6 +519,30 @@ async function scanAzure(options: ScanCommandOptions) {
     success(`Report saved to ${filename}`);
     console.log(`\nTotal opportunities: ${report.opportunities.length}`);
     console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
+  } else if (options.output === 'html') {
+    const html = exportToHtml(report.opportunities, {
+      provider: 'azure',
+      region: client.location,
+      totalSavings: report.totalPotentialSavings,
+      scanDate: new Date(),
+    }, {
+      includeCharts: true,
+      theme: 'light',
+    });
+    const filename = `cloud-cost-report-azure-${Date.now()}.html`;
+    fs.writeFileSync(filename, html);
+    success(`Report saved to ${filename}`);
+    console.log(`\nTotal opportunities: ${report.opportunities.length}`);
+    console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
+    
+    // Try to open in browser
+    try {
+      const open = await import('open');
+      await open.default(filename);
+      info(`Opening report in your browser...`);
+    } catch (err) {
+      info(`Open the file manually: ${filename}`);
+    }
   } else {
     await renderTable(report, topN, aiService);
   }
@@ -677,6 +726,30 @@ async function scanGCP(options: ScanCommandOptions) {
     success(`Report saved to ${filename}`);
     console.log(`\nTotal opportunities: ${report.opportunities.length}`);
     console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
+  } else if (options.output === 'html') {
+    const html = exportToHtml(report.opportunities, {
+      provider: 'gcp',
+      region: client.region,
+      totalSavings: report.totalPotentialSavings,
+      scanDate: new Date(),
+    }, {
+      includeCharts: true,
+      theme: 'light',
+    });
+    const filename = `cloud-cost-report-gcp-${Date.now()}.html`;
+    fs.writeFileSync(filename, html);
+    success(`Report saved to ${filename}`);
+    console.log(`\nTotal opportunities: ${report.opportunities.length}`);
+    console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
+    
+    // Try to open in browser
+    try {
+      const open = await import('open');
+      await open.default(filename);
+      info(`Opening report in your browser...`);
+    } catch (err) {
+      info(`Open the file manually: ${filename}`);
+    }
   } else {
     await renderTable(report, topN, aiService);
   }
