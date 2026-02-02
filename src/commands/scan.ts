@@ -5,18 +5,29 @@ import { analyzeRDSInstances } from '../providers/aws/rds';
 import { analyzeS3Buckets } from '../providers/aws/s3';
 import { analyzeELBs } from '../providers/aws/elb';
 import { analyzeElasticIPs } from '../providers/aws/eip';
+import { analyzeLambdaFunctions } from '../providers/aws/lambda';
+import { analyzeNATGateways } from '../providers/aws/nat-gateway';
+import { analyzeDynamoDBTables } from '../providers/aws/dynamodb';
+import { analyzeCloudWatchLogs } from '../providers/aws/cloudwatch-logs';
+import { analyzeSnapshots } from '../providers/aws/snapshots';
+import { analyzeElastiCache } from '../providers/aws/elasticache';
+import { analyzeECS } from '../providers/aws/ecs';
 import { AzureClient } from '../providers/azure/client';
 import { analyzeAzureVMs } from '../providers/azure/vms';
 import { analyzeAzureDisks } from '../providers/azure/disks';
 import { analyzeAzureStorage } from '../providers/azure/storage';
 import { analyzeAzureSQL } from '../providers/azure/sql';
 import { analyzeAzurePublicIPs } from '../providers/azure/public-ips';
+import { analyzeAppServicePlans } from '../providers/azure/app-services';
+import { analyzeAzureFunctions } from '../providers/azure/functions';
+import { analyzeCosmosDB } from '../providers/azure/cosmosdb';
 import { GCPClient } from '../providers/gcp/client';
 import { analyzeGCEInstances } from '../providers/gcp/compute';
 import { analyzeGCSBuckets } from '../providers/gcp/storage';
 import { analyzeCloudSQLInstances } from '../providers/gcp/cloudsql';
 import { analyzePersistentDisks } from '../providers/gcp/disks';
 import { analyzeStaticIPs } from '../providers/gcp/static-ips';
+import { analyzeLoadBalancers } from '../providers/gcp/load-balancers';
 import { ScanReport, SavingsOpportunity } from '../types/opportunity';
 import { renderTable } from '../reporters/table';
 import { renderJSON } from '../reporters/json';
@@ -101,6 +112,27 @@ async function scanAWS(options: ScanCommandOptions) {
     info('Analyzing Elastic IPs...');
     const eipPromise = analyzeElasticIPs(client);
 
+    info('Analyzing Lambda functions...');
+    const lambdaPromise = analyzeLambdaFunctions(client);
+
+    info('Analyzing NAT Gateways...');
+    const natGatewayPromise = analyzeNATGateways(client);
+
+    info('Analyzing DynamoDB tables...');
+    const dynamodbPromise = analyzeDynamoDBTables(client);
+
+    info('Analyzing CloudWatch Logs...');
+    const cloudwatchLogsPromise = analyzeCloudWatchLogs(client);
+
+    info('Analyzing Snapshots...');
+    const snapshotsPromise = analyzeSnapshots(client);
+
+    info('Analyzing ElastiCache clusters...');
+    const elasticachePromise = analyzeElastiCache(client);
+
+    info('Analyzing ECS/Fargate...');
+    const ecsPromise = analyzeECS(client);
+
     // Wait for all analyzers to complete
     const [
       ec2Opportunities,
@@ -109,6 +141,13 @@ async function scanAWS(options: ScanCommandOptions) {
       s3Opportunities,
       elbOpportunities,
       eipOpportunities,
+      lambdaOpportunities,
+      natGatewayOpportunities,
+      dynamodbOpportunities,
+      cloudwatchLogsOpportunities,
+      snapshotsOpportunities,
+      elasticacheOpportunities,
+      ecsOpportunities,
     ] = await Promise.all([
       ec2Promise,
       ebsPromise,
@@ -116,6 +155,13 @@ async function scanAWS(options: ScanCommandOptions) {
       s3Promise,
       elbPromise,
       eipPromise,
+      lambdaPromise,
+      natGatewayPromise,
+      dynamodbPromise,
+      cloudwatchLogsPromise,
+      snapshotsPromise,
+      elasticachePromise,
+      ecsPromise,
     ]);
 
     success(`Found ${ec2Opportunities.length} EC2 opportunities`);
@@ -124,6 +170,13 @@ async function scanAWS(options: ScanCommandOptions) {
     success(`Found ${s3Opportunities.length} S3 opportunities`);
     success(`Found ${elbOpportunities.length} ELB opportunities`);
     success(`Found ${eipOpportunities.length} EIP opportunities`);
+    success(`Found ${lambdaOpportunities.length} Lambda opportunities`);
+    success(`Found ${natGatewayOpportunities.length} NAT Gateway opportunities`);
+    success(`Found ${dynamodbOpportunities.length} DynamoDB opportunities`);
+    success(`Found ${cloudwatchLogsOpportunities.length} CloudWatch Logs opportunities`);
+    success(`Found ${snapshotsOpportunities.length} Snapshot opportunities`);
+    success(`Found ${elasticacheOpportunities.length} ElastiCache opportunities`);
+    success(`Found ${ecsOpportunities.length} ECS/Fargate opportunities`);
 
     // Combine opportunities
     const allOpportunities: SavingsOpportunity[] = [
@@ -133,6 +186,13 @@ async function scanAWS(options: ScanCommandOptions) {
       ...s3Opportunities,
       ...elbOpportunities,
       ...eipOpportunities,
+      ...lambdaOpportunities,
+      ...natGatewayOpportunities,
+      ...dynamodbOpportunities,
+      ...cloudwatchLogsOpportunities,
+      ...snapshotsOpportunities,
+      ...elasticacheOpportunities,
+      ...ecsOpportunities,
     ];
 
     // Filter by minimum savings if specified
@@ -282,6 +342,15 @@ async function scanAzure(options: ScanCommandOptions) {
   info('Analyzing Public IP Addresses...');
   const ipPromise = analyzeAzurePublicIPs(client);
 
+  info('Analyzing App Service Plans...');
+  const appServicePromise = analyzeAppServicePlans(client);
+
+  info('Analyzing Azure Functions...');
+  const functionsPromise = analyzeAzureFunctions(client);
+
+  info('Analyzing CosmosDB...');
+  const cosmosdbPromise = analyzeCosmosDB(client);
+
   // Wait for all analyzers to complete
   const [
     vmOpportunities,
@@ -289,12 +358,18 @@ async function scanAzure(options: ScanCommandOptions) {
     storageOpportunities,
     sqlOpportunities,
     ipOpportunities,
+    appServiceOpportunities,
+    functionsOpportunities,
+    cosmosdbOpportunities,
   ] = await Promise.all([
     vmPromise,
     diskPromise,
     storagePromise,
     sqlPromise,
     ipPromise,
+    appServicePromise,
+    functionsPromise,
+    cosmosdbPromise,
   ]);
 
   success(`Found ${vmOpportunities.length} VM opportunities`);
@@ -302,6 +377,9 @@ async function scanAzure(options: ScanCommandOptions) {
   success(`Found ${storageOpportunities.length} Storage opportunities`);
   success(`Found ${sqlOpportunities.length} SQL opportunities`);
   success(`Found ${ipOpportunities.length} Public IP opportunities`);
+  success(`Found ${appServiceOpportunities.length} App Service opportunities`);
+  success(`Found ${functionsOpportunities.length} Azure Functions opportunities`);
+  success(`Found ${cosmosdbOpportunities.length} CosmosDB opportunities`);
 
   // Combine opportunities
   const allOpportunities: SavingsOpportunity[] = [
@@ -310,6 +388,9 @@ async function scanAzure(options: ScanCommandOptions) {
     ...storageOpportunities,
     ...sqlOpportunities,
     ...ipOpportunities,
+    ...appServiceOpportunities,
+    ...functionsOpportunities,
+    ...cosmosdbOpportunities,
   ];
 
   // Filter by minimum savings if specified
@@ -452,6 +533,9 @@ async function scanGCP(options: ScanCommandOptions) {
   info('Analyzing Static IPs...');
   const ipsPromise = analyzeStaticIPs(client);
 
+  info('Analyzing Load Balancers...');
+  const lbPromise = analyzeLoadBalancers(client);
+
   // Wait for all analyzers to complete
   const [
     gceOpportunities,
@@ -459,12 +543,14 @@ async function scanGCP(options: ScanCommandOptions) {
     cloudsqlOpportunities,
     disksOpportunities,
     ipsOpportunities,
+    lbOpportunities,
   ] = await Promise.all([
     gcePromise,
     gcsPromise,
     cloudsqlPromise,
     disksPromise,
     ipsPromise,
+    lbPromise,
   ]);
 
   success(`Found ${gceOpportunities.length} Compute Engine opportunities`);
@@ -472,6 +558,7 @@ async function scanGCP(options: ScanCommandOptions) {
   success(`Found ${cloudsqlOpportunities.length} Cloud SQL opportunities`);
   success(`Found ${disksOpportunities.length} Persistent Disk opportunities`);
   success(`Found ${ipsOpportunities.length} Static IP opportunities`);
+  success(`Found ${lbOpportunities.length} Load Balancer opportunities`);
 
   // Combine opportunities
   const allOpportunities: SavingsOpportunity[] = [
@@ -480,6 +567,7 @@ async function scanGCP(options: ScanCommandOptions) {
     ...cloudsqlOpportunities,
     ...disksOpportunities,
     ...ipsOpportunities,
+    ...lbOpportunities,
   ];
 
   // Filter by minimum savings if specified

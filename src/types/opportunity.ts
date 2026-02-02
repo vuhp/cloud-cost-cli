@@ -4,7 +4,7 @@ export interface SavingsOpportunity {
   resourceType: string;
   resourceId: string;
   resourceName?: string;
-  category: 'idle' | 'oversized' | 'unused' | 'misconfigured';
+  category: 'idle' | 'oversized' | 'unused' | 'misconfigured' | 'underutilized';
   currentCost: number;
   estimatedSavings: number;
   confidence: 'high' | 'medium' | 'low';

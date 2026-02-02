@@ -4,6 +4,11 @@ import { CostExplorerClient } from '@aws-sdk/client-cost-explorer';
 import { RDSClient } from '@aws-sdk/client-rds';
 import { S3Client } from '@aws-sdk/client-s3';
 import { ElasticLoadBalancingV2Client } from '@aws-sdk/client-elastic-load-balancing-v2';
+import { LambdaClient } from '@aws-sdk/client-lambda';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { CloudWatchLogsClient } from '@aws-sdk/client-cloudwatch-logs';
+import { ElastiCacheClient } from '@aws-sdk/client-elasticache';
+import { ECSClient } from '@aws-sdk/client-ecs';
 import { fromIni, fromEnv } from '@aws-sdk/credential-providers';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -21,6 +26,11 @@ export class AWSClient {
   private rds: RDSClient;
   private s3: S3Client;
   private elb: ElasticLoadBalancingV2Client;
+  private lambda: LambdaClient;
+  private dynamodb: DynamoDBClient;
+  private cloudwatchLogs: CloudWatchLogsClient;
+  private elasticache: ElastiCacheClient;
+  private ecs: ECSClient;
   public region: string;
   public profile: string;
 
@@ -41,6 +51,11 @@ export class AWSClient {
     this.rds = new RDSClient({ region: this.region, credentials });
     this.s3 = new S3Client({ region: this.region, credentials });
     this.elb = new ElasticLoadBalancingV2Client({ region: this.region, credentials });
+    this.lambda = new LambdaClient({ region: this.region, credentials });
+    this.dynamodb = new DynamoDBClient({ region: this.region, credentials });
+    this.cloudwatchLogs = new CloudWatchLogsClient({ region: this.region, credentials });
+    this.elasticache = new ElastiCacheClient({ region: this.region, credentials });
+    this.ecs = new ECSClient({ region: this.region, credentials });
   }
 
   private getProfileRegion(profileName: string): string | null {
@@ -97,5 +112,25 @@ export class AWSClient {
 
   getELBClient() {
     return this.elb;
+  }
+
+  getLambdaClient() {
+    return this.lambda;
+  }
+
+  getDynamoDBClient() {
+    return this.dynamodb;
+  }
+
+  getCloudWatchLogsClient() {
+    return this.cloudwatchLogs;
+  }
+
+  getElastiCacheClient() {
+    return this.elasticache;
+  }
+
+  getECSClient() {
+    return this.ecs;
   }
 }

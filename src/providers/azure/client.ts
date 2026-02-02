@@ -4,6 +4,8 @@ import { StorageManagementClient } from '@azure/arm-storage';
 import { SqlManagementClient } from '@azure/arm-sql';
 import { NetworkManagementClient } from '@azure/arm-network';
 import { MonitorClient } from '@azure/arm-monitor';
+import { WebSiteManagementClient } from '@azure/arm-appservice';
+import { CosmosDBManagementClient } from '@azure/arm-cosmosdb';
 
 export interface AzureClientConfig {
   subscriptionId?: string;
@@ -83,5 +85,13 @@ export class AzureClient {
 
   getMonitorClient(): MonitorClient {
     return new MonitorClient(this.credential, this.subscriptionId);
+  }
+
+  getWebSiteManagementClient(): WebSiteManagementClient {
+    return new WebSiteManagementClient(this.credential, this.subscriptionId);
+  }
+
+  getCosmosDBManagementClient(): CosmosDBManagementClient {
+    return new CosmosDBManagementClient(this.credential, this.subscriptionId);
   }
 }
