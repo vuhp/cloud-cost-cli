@@ -229,14 +229,14 @@ cloud-cost-cli scan --provider azure --min-savings 50  # Only show opportunities
 # Terminal table (default)
 cloud-cost-cli scan --provider aws
 
-# JSON format (for programmatic use)
-cloud-cost-cli scan --provider aws --format json --output report.json
+# JSON format (outputs to stdout, pipe to file)
+cloud-cost-cli scan --provider aws --output json > report.json
 
-# CSV format (for spreadsheets and data analysis)
-cloud-cost-cli scan --provider aws --format csv --output savings.csv
+# CSV format (auto-saves to cloud-cost-report-aws-[timestamp].csv)
+cloud-cost-cli scan --provider aws --output csv
 
-# Excel format (rich formatting with summary sheet)
-cloud-cost-cli scan --provider aws --format excel --output report.xlsx
+# Excel format (auto-saves to cloud-cost-report-aws-[timestamp].xlsx)
+cloud-cost-cli scan --provider aws --output excel
 ```
 
 **Export Formats:**
