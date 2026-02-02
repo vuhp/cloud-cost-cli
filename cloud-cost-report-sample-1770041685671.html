@@ -1,115 +1,25 @@
-import { SavingsOpportunity } from '../types/opportunity';
-
-interface HtmlReportMetadata {
-  provider: string;
-  region?: string;
-  totalSavings: number;
-  scanDate: Date;
-}
-
-interface HtmlReportOptions {
-  includeCharts?: boolean;
-  theme?: 'light' | 'dark';
-}
-
-export function exportToHtml(
-  opportunities: SavingsOpportunity[],
-  metadata: HtmlReportMetadata,
-  options: HtmlReportOptions = {}
-): string {
-  const opts: HtmlReportOptions = {
-    includeCharts: true,
-    theme: 'light' as const,
-    ...options,
-  };
-
-  return generateHtmlDocument(opportunities, metadata, opts);
-}
-
-function generateHtmlDocument(
-  opportunities: SavingsOpportunity[],
-  metadata: HtmlReportMetadata,
-  options: HtmlReportOptions
-): string {
-  const includeCharts = options.includeCharts !== false;
-  const theme = options.theme || 'light';
-  
-  const dateStr = metadata.scanDate.toISOString().split('T')[0];
-  const monthlySavings = metadata.totalSavings;
-  const yearlySavings = monthlySavings * 12;
-  const avgSavings = opportunities.length > 0 ? monthlySavings / opportunities.length : 0;
-
-  // Group opportunities by service for pie chart
-  const serviceData: { [key: string]: number } = {};
-  opportunities.forEach(opp => {
-    const service = opp.resourceType;
-    serviceData[service] = (serviceData[service] || 0) + opp.estimatedSavings;
-  });
-
-  const html = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cloud Cost Report - ${dateStr}</title>
-  ${getInlineStyles(theme)}
-</head>
-<body>
-  <div class="container">
-    ${renderHeader(metadata)}
-    ${renderSummary(monthlySavings, yearlySavings, opportunities.length, avgSavings)}
-    ${includeCharts ? renderChartsSection(serviceData, opportunities) : ''}
-    ${renderOpportunitiesTable(opportunities)}
-    ${renderFooter()}
-  </div>
-
-  <script>
-    ${getChartJsLibrary()}
-    ${getInteractivityScript()}
-    
-    // Embed scan data
-    const scanData = ${JSON.stringify({
-      opportunities,
-      metadata: {
-        provider: metadata.provider,
-        region: metadata.region,
-        totalSavings: metadata.totalSavings,
-        scanDate: metadata.scanDate.toISOString(),
-      },
-      serviceData,
-    }, null, 2)};
-    
-    // Initialize
-    window.addEventListener('DOMContentLoaded', function() {
-      ${includeCharts ? 'initializeCharts(scanData);' : ''}
-      initializeTable();
-    });
-  </script>
-</body>
-</html>`;
-
-  return html;
-}
-
-function getInlineStyles(theme: 'light' | 'dark'): string {
-  const isDark = theme === 'dark';
-  
-  return `<style>
+  <title>Cloud Cost Report - 2026-02-02</title>
+  <style>
     /* Reset and base styles */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       line-height: 1.6;
-      color: ${isDark ? '#e5e7eb' : '#1f2937'};
-      background: ${isDark ? '#111827' : '#f9fafb'};
+      color: #1f2937;
+      background: #f9fafb;
       padding: 20px;
     }
     
     .container {
       max-width: 1400px;
       margin: 0 auto;
-      background: ${isDark ? '#1f2937' : '#ffffff'};
+      background: #ffffff;
       padding: 40px;
       border-radius: 12px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -132,7 +42,7 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
     }
     
     header .meta {
-      color: ${isDark ? '#9ca3af' : '#6b7280'};
+      color: #6b7280;
       font-size: 1rem;
     }
     
@@ -188,16 +98,16 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
     }
     
     .chart-container {
-      background: ${isDark ? '#374151' : '#ffffff'};
+      background: #ffffff;
       padding: 28px;
-      border: 1px solid ${isDark ? '#4b5563' : '#e5e7eb'};
+      border: 1px solid #e5e7eb;
       border-radius: 12px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
     
     .chart-container h3 {
       margin-bottom: 24px;
-      color: ${isDark ? '#f3f4f6' : '#1f2937'};
+      color: #1f2937;
       font-size: 1.25rem;
       font-weight: 600;
     }
@@ -211,7 +121,7 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
     .opportunities h2 {
       font-size: 1.75rem;
       margin-bottom: 24px;
-      color: ${isDark ? '#f3f4f6' : '#1f2937'};
+      color: #1f2937;
     }
     
     .filters {
@@ -224,11 +134,11 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
     .filters input,
     .filters select {
       padding: 10px 16px;
-      border: 1px solid ${isDark ? '#4b5563' : '#d1d5db'};
+      border: 1px solid #d1d5db;
       border-radius: 8px;
       font-size: 0.9rem;
-      background: ${isDark ? '#374151' : '#ffffff'};
-      color: ${isDark ? '#f3f4f6' : '#1f2937'};
+      background: #ffffff;
+      color: #1f2937;
       transition: border-color 0.2s;
     }
     
@@ -248,7 +158,7 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
     .table-wrapper {
       overflow-x: auto;
       border-radius: 8px;
-      border: 1px solid ${isDark ? '#4b5563' : '#e5e7eb'};
+      border: 1px solid #e5e7eb;
     }
     
     table {
@@ -257,7 +167,7 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
     }
     
     thead {
-      background: ${isDark ? '#374151' : '#f9fafb'};
+      background: #f9fafb;
       position: sticky;
       top: 0;
     }
@@ -266,15 +176,15 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
       text-align: left;
       padding: 16px;
       font-weight: 600;
-      color: ${isDark ? '#f3f4f6' : '#374151'};
-      border-bottom: 2px solid ${isDark ? '#4b5563' : '#e5e7eb'};
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
       cursor: pointer;
       user-select: none;
       white-space: nowrap;
     }
     
     th:hover {
-      background: ${isDark ? '#4b5563' : '#f3f4f6'};
+      background: #f3f4f6;
     }
     
     th .sort-indicator {
@@ -285,8 +195,8 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
     
     td {
       padding: 14px 16px;
-      border-bottom: 1px solid ${isDark ? '#374151' : '#e5e7eb'};
-      color: ${isDark ? '#d1d5db' : '#4b5563'};
+      border-bottom: 1px solid #e5e7eb;
+      color: #4b5563;
     }
     
     tbody tr {
@@ -294,7 +204,7 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
     }
     
     tbody tr:hover {
-      background: ${isDark ? '#374151' : '#f9fafb'};
+      background: #f9fafb;
     }
     
     tbody tr.hidden {
@@ -329,7 +239,7 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
     .resource-id {
       font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
       font-size: 0.85rem;
-      color: ${isDark ? '#9ca3af' : '#6b7280'};
+      color: #6b7280;
     }
     
     .savings {
@@ -346,9 +256,9 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
     footer {
       margin-top: 48px;
       padding-top: 24px;
-      border-top: 1px solid ${isDark ? '#374151' : '#e5e7eb'};
+      border-top: 1px solid #e5e7eb;
       text-align: center;
-      color: ${isDark ? '#9ca3af' : '#6b7280'};
+      color: #6b7280;
       font-size: 0.9rem;
     }
     
@@ -426,63 +336,40 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
         padding: 10px;
       }
     }
-  </style>`;
-}
-
-function renderHeader(metadata: HtmlReportMetadata): string {
-  const dateStr = metadata.scanDate.toLocaleString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZoneName: 'short',
-  });
-
-  return `
+  </style>
+</head>
+<body>
+  <div class="container">
+    
     <header>
       <h1>☁️ Cloud Cost Optimization Report</h1>
       <div class="meta">
-        Generated: ${dateStr} | 
-        Provider: ${metadata.provider.toUpperCase()} | 
-        Region: ${metadata.region || 'N/A'}
+        Generated: February 2, 2026 at 02:14 PM UTC | 
+        Provider: AWS | 
+        Region: us-east-1
       </div>
     </header>
-  `;
-}
-
-function renderSummary(
-  monthlySavings: number,
-  yearlySavings: number,
-  opportunitiesCount: number,
-  avgSavings: number
-): string {
-  return `
+  
+    
     <section class="summary">
       <div class="card">
         <h3>Total Potential Savings</h3>
-        <div class="big-number">$${monthlySavings.toFixed(0)}</div>
-        <div class="sub">$${yearlySavings.toFixed(0)}/year</div>
+        <div class="big-number">$1890</div>
+        <div class="sub">$22674/year</div>
       </div>
       <div class="card">
         <h3>Opportunities Found</h3>
-        <div class="big-number">${opportunitiesCount}</div>
-        <div class="sub">${opportunitiesCount === 1 ? 'resource' : 'resources'} to optimize</div>
+        <div class="big-number">15</div>
+        <div class="sub">resources to optimize</div>
       </div>
       <div class="card">
         <h3>Average Savings</h3>
-        <div class="big-number">$${avgSavings.toFixed(0)}</div>
+        <div class="big-number">$126</div>
         <div class="sub">per opportunity</div>
       </div>
     </section>
-  `;
-}
-
-function renderChartsSection(
-  serviceData: { [key: string]: number },
-  opportunities: SavingsOpportunity[]
-): string {
-  return `
+  
+    
     <section class="charts">
       <div class="chart-container">
         <h3>💰 Savings by Service</h3>
@@ -497,26 +384,8 @@ function renderChartsSection(
         </div>
       </div>
     </section>
-  `;
-}
-
-function renderOpportunitiesTable(opportunities: SavingsOpportunity[]): string {
-  const rows = opportunities
-    .map((opp, index) => {
-      return `
-      <tr>
-        <td>${index + 1}</td>
-        <td><span class="provider-badge provider-${opp.provider}">${opp.provider}</span></td>
-        <td>${opp.resourceType}</td>
-        <td class="resource-id">${escapeHtml(opp.resourceId)}</td>
-        <td class="recommendation">${escapeHtml(opp.recommendation)}</td>
-        <td class="savings">$${opp.estimatedSavings.toFixed(2)}</td>
-      </tr>
-    `;
-    })
-    .join('');
-
-  return `
+  
+    
     <section class="opportunities">
       <h2>🔍 All Opportunities</h2>
       <div class="filters">
@@ -541,16 +410,148 @@ function renderOpportunitiesTable(opportunities: SavingsOpportunity[]): string {
             </tr>
           </thead>
           <tbody>
-            ${rows}
+            
+      <tr>
+        <td>1</td>
+        <td><span class="provider-badge provider-aws">aws</span></td>
+        <td>EC2</td>
+        <td class="resource-id">i-0abc123def456789</td>
+        <td class="recommendation">Stop idle EC2 instance (0% CPU utilization over 30 days)</td>
+        <td class="savings">$65.50</td>
+      </tr>
+    
+      <tr>
+        <td>2</td>
+        <td><span class="provider-badge provider-aws">aws</span></td>
+        <td>EBS</td>
+        <td class="resource-id">vol-0xyz789abc123456</td>
+        <td class="recommendation">Delete unattached EBS volume (detached for 45 days)</td>
+        <td class="savings">$40.00</td>
+      </tr>
+    
+      <tr>
+        <td>3</td>
+        <td><span class="provider-badge provider-aws">aws</span></td>
+        <td>RDS</td>
+        <td class="resource-id">mydb-production</td>
+        <td class="recommendation">Downsize RDS instance from db.m5.large to db.t3.medium (avg CPU: 15%)</td>
+        <td class="savings">$180.00</td>
+      </tr>
+    
+      <tr>
+        <td>4</td>
+        <td><span class="provider-badge provider-aws">aws</span></td>
+        <td>Lambda</td>
+        <td class="resource-id">process-orders</td>
+        <td class="recommendation">Reduce Lambda memory from 3008MB to 1024MB (avg usage: 512MB)</td>
+        <td class="savings">$125.00</td>
+      </tr>
+    
+      <tr>
+        <td>5</td>
+        <td><span class="provider-badge provider-aws">aws</span></td>
+        <td>DynamoDB</td>
+        <td class="resource-id">sessions-table</td>
+        <td class="recommendation">Switch to on-demand pricing (provisioned capacity unused 85% of time)</td>
+        <td class="savings">$92.00</td>
+      </tr>
+    
+      <tr>
+        <td>6</td>
+        <td><span class="provider-badge provider-aws">aws</span></td>
+        <td>NAT Gateway</td>
+        <td class="resource-id">nat-0123456789abcdef</td>
+        <td class="recommendation">Remove unused NAT Gateway (0 GB data processed in 30 days)</td>
+        <td class="savings">$32.40</td>
+      </tr>
+    
+      <tr>
+        <td>7</td>
+        <td><span class="provider-badge provider-aws">aws</span></td>
+        <td>ElastiCache</td>
+        <td class="resource-id">redis-cluster-prod</td>
+        <td class="recommendation">Downsize from cache.r5.large to cache.t3.medium (avg CPU: 12%)</td>
+        <td class="savings">$156.00</td>
+      </tr>
+    
+      <tr>
+        <td>8</td>
+        <td><span class="provider-badge provider-azure">azure</span></td>
+        <td>App Service Plan</td>
+        <td class="resource-id">ASP-production-premium</td>
+        <td class="recommendation">Delete empty App Service Plan (0 apps deployed)</td>
+        <td class="savings">$292.00</td>
+      </tr>
+    
+      <tr>
+        <td>9</td>
+        <td><span class="provider-badge provider-azure">azure</span></td>
+        <td>CosmosDB</td>
+        <td class="resource-id">cosmosdb-analytics</td>
+        <td class="recommendation">Reduce provisioned throughput from 5000 RU/s to 1000 RU/s (avg usage: 800 RU/s)</td>
+        <td class="savings">$520.00</td>
+      </tr>
+    
+      <tr>
+        <td>10</td>
+        <td><span class="provider-badge provider-azure">azure</span></td>
+        <td>Virtual Machine</td>
+        <td class="resource-id">vm-staging-server</td>
+        <td class="recommendation">Stop VM outside business hours (runs 24/7, only needed 9-5)</td>
+        <td class="savings">$240.00</td>
+      </tr>
+    
+      <tr>
+        <td>11</td>
+        <td><span class="provider-badge provider-gcp">gcp</span></td>
+        <td>Compute Engine</td>
+        <td class="resource-id">instance-test-server</td>
+        <td class="recommendation">Delete idle VM (0% CPU for 60 days)</td>
+        <td class="savings">$73.00</td>
+      </tr>
+    
+      <tr>
+        <td>12</td>
+        <td><span class="provider-badge provider-aws">aws</span></td>
+        <td>S3</td>
+        <td class="resource-id">logs-bucket-2023</td>
+        <td class="recommendation">Apply lifecycle policy to transition old logs to Glacier (2TB of logs &gt; 90 days old)</td>
+        <td class="savings">$48.00</td>
+      </tr>
+    
+      <tr>
+        <td>13</td>
+        <td><span class="provider-badge provider-aws">aws</span></td>
+        <td>ELB</td>
+        <td class="resource-id">elb-old-staging</td>
+        <td class="recommendation">Delete unused load balancer (0 requests in 30 days)</td>
+        <td class="savings">$18.00</td>
+      </tr>
+    
+      <tr>
+        <td>14</td>
+        <td><span class="provider-badge provider-aws">aws</span></td>
+        <td>EIP</td>
+        <td class="resource-id">54.123.45.67</td>
+        <td class="recommendation">Release unattached Elastic IP</td>
+        <td class="savings">$3.60</td>
+      </tr>
+    
+      <tr>
+        <td>15</td>
+        <td><span class="provider-badge provider-azure">azure</span></td>
+        <td>Public IP</td>
+        <td class="resource-id">pip-unused-eastus</td>
+        <td class="recommendation">Delete unattached public IP address</td>
+        <td class="savings">$4.00</td>
+      </tr>
+    
           </tbody>
         </table>
       </div>
     </section>
-  `;
-}
-
-function renderFooter(): string {
-  return `
+  
+    
     <footer>
       <p>Generated by <strong>cloud-cost-cli</strong></p>
       <p>
@@ -558,33 +559,14 @@ function renderFooter(): string {
         <a href="https://www.npmjs.com/package/cloud-cost-cli" target="_blank">npm</a>
       </p>
     </footer>
-  `;
-}
+  
+  </div>
 
-function escapeHtml(text: string): string {
-  // Simple HTML escaping (works in Node and browser)
-  return text.replace(/[&<>"']/g, (char) => {
-    const entities: { [key: string]: string } = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    };
-    return entities[char] || char;
-  });
-}
-
-function getChartJsLibrary(): string {
-  // For now, use CDN link in script tag
-  // Later we can inline the minified Chart.js
-  return `
+  <script>
+    
     // Chart.js will be loaded from CDN
-  `;
-}
-
-function getInteractivityScript(): string {
-  return `
+  
+    
     // Chart.js CDN (v4.4.1)
     const chartScript = document.createElement('script');
     chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
@@ -743,5 +725,162 @@ function getInteractivityScript(): string {
         });
       }
     }
-  `;
-}
+  
+    
+    // Embed scan data
+    const scanData = {
+  "opportunities": [
+    {
+      "provider": "aws",
+      "resourceType": "EC2",
+      "resourceId": "i-0abc123def456789",
+      "recommendation": "Stop idle EC2 instance (0% CPU utilization over 30 days)",
+      "estimatedSavings": 65.5,
+      "confidence": "high"
+    },
+    {
+      "provider": "aws",
+      "resourceType": "EBS",
+      "resourceId": "vol-0xyz789abc123456",
+      "recommendation": "Delete unattached EBS volume (detached for 45 days)",
+      "estimatedSavings": 40,
+      "confidence": "high"
+    },
+    {
+      "provider": "aws",
+      "resourceType": "RDS",
+      "resourceId": "mydb-production",
+      "recommendation": "Downsize RDS instance from db.m5.large to db.t3.medium (avg CPU: 15%)",
+      "estimatedSavings": 180,
+      "confidence": "medium"
+    },
+    {
+      "provider": "aws",
+      "resourceType": "Lambda",
+      "resourceId": "process-orders",
+      "recommendation": "Reduce Lambda memory from 3008MB to 1024MB (avg usage: 512MB)",
+      "estimatedSavings": 125,
+      "confidence": "high"
+    },
+    {
+      "provider": "aws",
+      "resourceType": "DynamoDB",
+      "resourceId": "sessions-table",
+      "recommendation": "Switch to on-demand pricing (provisioned capacity unused 85% of time)",
+      "estimatedSavings": 92,
+      "confidence": "medium"
+    },
+    {
+      "provider": "aws",
+      "resourceType": "NAT Gateway",
+      "resourceId": "nat-0123456789abcdef",
+      "recommendation": "Remove unused NAT Gateway (0 GB data processed in 30 days)",
+      "estimatedSavings": 32.4,
+      "confidence": "high"
+    },
+    {
+      "provider": "aws",
+      "resourceType": "ElastiCache",
+      "resourceId": "redis-cluster-prod",
+      "recommendation": "Downsize from cache.r5.large to cache.t3.medium (avg CPU: 12%)",
+      "estimatedSavings": 156,
+      "confidence": "medium"
+    },
+    {
+      "provider": "azure",
+      "resourceType": "App Service Plan",
+      "resourceId": "ASP-production-premium",
+      "recommendation": "Delete empty App Service Plan (0 apps deployed)",
+      "estimatedSavings": 292,
+      "confidence": "high"
+    },
+    {
+      "provider": "azure",
+      "resourceType": "CosmosDB",
+      "resourceId": "cosmosdb-analytics",
+      "recommendation": "Reduce provisioned throughput from 5000 RU/s to 1000 RU/s (avg usage: 800 RU/s)",
+      "estimatedSavings": 520,
+      "confidence": "high"
+    },
+    {
+      "provider": "azure",
+      "resourceType": "Virtual Machine",
+      "resourceId": "vm-staging-server",
+      "recommendation": "Stop VM outside business hours (runs 24/7, only needed 9-5)",
+      "estimatedSavings": 240,
+      "confidence": "medium"
+    },
+    {
+      "provider": "gcp",
+      "resourceType": "Compute Engine",
+      "resourceId": "instance-test-server",
+      "recommendation": "Delete idle VM (0% CPU for 60 days)",
+      "estimatedSavings": 73,
+      "confidence": "high"
+    },
+    {
+      "provider": "aws",
+      "resourceType": "S3",
+      "resourceId": "logs-bucket-2023",
+      "recommendation": "Apply lifecycle policy to transition old logs to Glacier (2TB of logs > 90 days old)",
+      "estimatedSavings": 48,
+      "confidence": "high"
+    },
+    {
+      "provider": "aws",
+      "resourceType": "ELB",
+      "resourceId": "elb-old-staging",
+      "recommendation": "Delete unused load balancer (0 requests in 30 days)",
+      "estimatedSavings": 18,
+      "confidence": "high"
+    },
+    {
+      "provider": "aws",
+      "resourceType": "EIP",
+      "resourceId": "54.123.45.67",
+      "recommendation": "Release unattached Elastic IP",
+      "estimatedSavings": 3.6,
+      "confidence": "high"
+    },
+    {
+      "provider": "azure",
+      "resourceType": "Public IP",
+      "resourceId": "pip-unused-eastus",
+      "recommendation": "Delete unattached public IP address",
+      "estimatedSavings": 4,
+      "confidence": "high"
+    }
+  ],
+  "metadata": {
+    "provider": "aws",
+    "region": "us-east-1",
+    "totalSavings": 1889.5,
+    "scanDate": "2026-02-02T14:14:45.641Z"
+  },
+  "serviceData": {
+    "EC2": 65.5,
+    "EBS": 40,
+    "RDS": 180,
+    "Lambda": 125,
+    "DynamoDB": 92,
+    "NAT Gateway": 32.4,
+    "ElastiCache": 156,
+    "App Service Plan": 292,
+    "CosmosDB": 520,
+    "Virtual Machine": 240,
+    "Compute Engine": 73,
+    "S3": 48,
+    "ELB": 18,
+    "EIP": 3.6,
+    "Public IP": 4
+  }
+};
+    
+    // Initialize
+    window.addEventListener('DOMContentLoaded', function() {
+      initializeCharts(scanData);
+      initializeTable();
+    });
+  </script>
+</body>
+</html>
