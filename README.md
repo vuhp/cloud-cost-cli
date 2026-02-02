@@ -58,15 +58,16 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ Filter by minimum savings amount
 
 **Potential future additions:**
-- More GCP services (Cloud Functions, Load Balancers, etc.)
+- More GCP services (Cloud Functions, Cloud Run, GKE)
 - Real-time pricing API integration
-- Additional AWS services (Lambda, DynamoDB, CloudFront, etc.)
-- Additional Azure services (App Services, CosmosDB, etc.)
+- Additional AWS services (CloudFront, API Gateway, Step Functions)
+- Additional Azure services (AKS, API Management)
 - Multi-region analysis
 - Historical cost tracking
 - Scheduled scans and notifications
 - CI/CD integration examples
 - Custom analyzer rules
+- Kubernetes cost analysis
 
 No commitment on timeline - contributions welcome!
 
@@ -300,6 +301,68 @@ Total potential savings: $1,245/month ($14,940/year)
 
 ---
 
+## 🆕 New in v0.6.0: Example Findings
+
+Here are real examples from the 11 new analyzers:
+
+### AWS Lambda
+```
+💰 Lambda function: api-handler-legacy
+   Last invocation: 62 days ago
+   Memory allocated: 3008 MB
+   Recommendation: Delete unused function or reduce memory to 512 MB
+   Estimated savings: $18.50/month
+```
+
+### AWS DynamoDB
+```
+💰 DynamoDB table: session-cache
+   Billing mode: Provisioned (25 RCU, 25 WCU)
+   Actual usage: ~2 reads/sec, ~1 write/sec
+   Recommendation: Switch to On-Demand pricing
+   Estimated savings: $22.40/month
+```
+
+### AWS NAT Gateway
+```
+💰 NAT Gateway: nat-0abc123xyz
+   Data processed: 0.15 GB in last 30 days
+   Recommendation: Delete and use VPC endpoints for AWS services
+   Estimated savings: $32.85/month
+```
+
+### AWS ElastiCache
+```
+💰 ElastiCache cluster: dev-redis
+   Type: cache.r5.large (13.5 GB RAM)
+   CPU utilization: 3%
+   Connections: 2 avg
+   Recommendation: Downsize to cache.t3.medium or delete if unused
+   Estimated savings: $85.00/month
+```
+
+### Azure App Service Plan
+```
+💰 App Service Plan: ASP-production-premium
+   Tier: Premium P2V2 ($292/month)
+   Apps deployed: 0 (empty!)
+   Recommendation: Delete unused plan
+   Estimated savings: $292.00/month
+```
+
+### Azure CosmosDB
+```
+💰 CosmosDB account: customer-db
+   Provisioned throughput: 10,000 RU/s
+   Actual usage: ~500 RU/s average
+   Recommendation: Reduce to 1,000 RU/s or switch to Serverless
+   Estimated savings: $520.00/month
+```
+
+**Total from these 6 examples alone: $970.75/month = $11,649/year saved!** 💰
+
+---
+
 ## AI Features Setup
 
 ### Option 1: OpenAI (Cloud, Paid)
@@ -473,9 +536,13 @@ A: No. It only reads resource metadata and usage metrics. It never modifies or d
 
 **Q: What permissions are required?**  
 A: Read-only permissions for each cloud provider:
-- **AWS**: EC2, EBS, RDS, S3, ELB, CloudWatch (ReadOnly IAM policies recommended)
-- **Azure**: Reader role on subscription or resource groups
+- **AWS**: EC2, EBS, RDS, S3, ELB, Lambda, DynamoDB, ElastiCache, ECS, CloudWatch, CloudWatch Logs, and Snapshots (ReadOnlyAccess policy covers all)
+- **Azure**: Reader role on subscription or resource groups (covers all analyzers)
 - **GCP**: Compute Viewer, Storage Viewer, Cloud SQL Viewer, Monitoring Viewer roles
+
+For detailed permissions and minimum IAM policies, see [IAM_PERMISSIONS.md](IAM_PERMISSIONS.md) in the repository.
+
+**Note:** If permissions are missing, the tool will skip those analyzers and continue with available ones.
 
 **Q: How accurate are the savings estimates?**  
 A: Cost estimates are based on standard pay-as-you-go pricing (as of January 2026) for:
