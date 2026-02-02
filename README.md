@@ -8,10 +8,7 @@
 A command-line tool that analyzes your AWS, Azure, and GCP resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
 **✨ NEW in v0.6.2:** HTML export — Beautiful, interactive reports that auto-open in your browser!  
-**✨ NEW in v0.6.0:** 11 additional analyzers — Lambda, DynamoDB, ElastiCache, CosmosDB, and more!  
-**✨ v0.5.0:** CSV and Excel export formats — perfect for sharing reports with your team!  
-**✨ v0.4.0:** Full GCP support with 5 analyzers (Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs)  
-**✨ v0.3.0:** AI-powered explanations and natural language queries!
+**✨ NEW in v0.6.0:** 11 additional analyzers — Lambda, DynamoDB, ElastiCache, CosmosDB, and more!
 
 ---
 
@@ -22,18 +19,6 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 ## The Solution
 
 `cloud-cost-cli` connects to your cloud accounts, analyzes resource usage and billing data, and outputs a ranked list of actionable savings opportunities — all in your terminal, in under 60 seconds.
-
-**What it finds:**
-- Idle VMs/Compute instances (low CPU, stopped but still billed)
-- Unattached volumes, disks, and snapshots
-- Oversized database instances (RDS, Azure SQL, Cloud SQL)
-- Old load balancers with no traffic
-- Unused public IP addresses / static IPs
-- Underutilized resources that can be downsized
-- Storage without lifecycle policies
-- **NEW:** Unused Lambda functions, over-provisioned DynamoDB, idle ElastiCache clusters
-- **NEW:** Empty App Service Plans, CosmosDB optimization, old CloudWatch Logs
-- **NEW:** Wasteful NAT Gateways, inactive ECS services, stale snapshots
 
 ---
 
@@ -57,20 +42,6 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ Output top savings opportunities with estimated monthly savings
 - ✅ Export report as JSON, CSV, Excel, HTML, or terminal table
 - ✅ Filter by minimum savings amount
-
-**Potential future additions:**
-- More GCP services (Cloud Functions, Cloud Run, GKE)
-- Real-time pricing API integration
-- Additional AWS services (CloudFront, API Gateway, Step Functions)
-- Additional Azure services (AKS, API Management)
-- Multi-region analysis
-- Historical cost tracking
-- Scheduled scans and notifications
-- CI/CD integration examples
-- Custom analyzer rules
-- Kubernetes cost analysis
-
-No commitment on timeline - contributions welcome!
 
 ---
 
