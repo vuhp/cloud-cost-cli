@@ -7,6 +7,7 @@
 
 A command-line tool that analyzes your AWS, Azure, and GCP resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
+**✨ NEW in v0.6.2:** HTML export — Beautiful, interactive reports that auto-open in your browser!  
 **✨ NEW in v0.6.0:** 11 additional analyzers — Lambda, DynamoDB, ElastiCache, CosmosDB, and more!  
 **✨ v0.5.0:** CSV and Excel export formats — perfect for sharing reports with your team!  
 **✨ v0.4.0:** Full GCP support with 5 analyzers (Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs)  
@@ -46,7 +47,7 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ **GCP analyzers (5)** - Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs
 - ✅ **🤖 AI-powered explanations** - Get human-readable explanations for why resources are costing money
 - ✅ **💬 Natural language queries** - Ask questions like "What's my biggest cost?" or "Show me idle VMs"
-- ✅ **📊 CSV & Excel export** - Export reports for sharing and analysis (v0.5.0)
+- ✅ **📊 HTML, CSV & Excel export** - Beautiful reports for presentations and sharing (v0.6.2)
 - ✅ **🔒 Privacy-first AI** - Use local Ollama or cloud OpenAI
 - ✅ **💰 Cost tracking** - Track AI API costs (OpenAI only)
 - ✅ **⚙️ Configuration file** - Save your preferences
@@ -54,7 +55,7 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ Connect via cloud credentials (read-only recommended)
 - ✅ Analyze last 7-30 days of usage
 - ✅ Output top savings opportunities with estimated monthly savings
-- ✅ Export report as JSON, CSV, Excel, or terminal table
+- ✅ Export report as JSON, CSV, Excel, HTML, or terminal table
 - ✅ Filter by minimum savings amount
 
 **Potential future additions:**
@@ -237,6 +238,9 @@ cloud-cost-cli scan --provider aws --output csv
 
 # Excel format (auto-saves to cloud-cost-report-aws-[timestamp].xlsx)
 cloud-cost-cli scan --provider aws --output excel
+
+# HTML format (auto-saves and opens in browser)
+cloud-cost-cli scan --provider aws --output html
 ```
 
 **Export Formats:**
@@ -247,6 +251,7 @@ cloud-cost-cli scan --provider aws --output excel
 | **json** | API integration | Complete data structure |
 | **csv** | Data analysis | Import to Excel, Google Sheets |
 | **excel** | Reports & sharing | Summary sheet, rich formatting |
+| **html** | Presentations & web | Interactive charts, shareable link |
 
 **Excel Export Features:**
 - Summary worksheet with total savings by category
@@ -255,6 +260,18 @@ cloud-cost-cli scan --provider aws --output excel
 - Formatted currency and auto-sized columns
 - Frozen headers for easy scrolling
 - Professional look, ready to share with management
+
+**HTML Export Features (NEW in v0.6.2):**
+- Beautiful, self-contained HTML file (works offline)
+- Interactive charts (pie chart by service, bar chart for top opportunities)
+- Sortable and searchable opportunity table
+- Responsive design (looks great on mobile)
+- Auto-opens in your default browser
+- Perfect for:
+  - 📧 Email as attachment (managers don't need CLI!)
+  - 🖨️ Print to PDF for presentations
+  - 🌐 Host on GitHub Pages or S3
+  - 👥 Share with non-technical stakeholders
 
 **Example output (with AI explanations):**
 ```
