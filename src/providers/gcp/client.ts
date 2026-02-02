@@ -70,6 +70,25 @@ export class GCPClient {
         console.error('GCP API Error:', error);
       }
       
+      // Check for credential errors first (before API calls)
+      if (errorMsg.includes('Could not load the default credentials') ||
+          errorMsg.includes('NO_ADC_FOUND') ||
+          errorMsg.includes('GOOGLE_APPLICATION_CREDENTIALS')) {
+        throw new Error(
+          'GCP credentials not found. Choose one of these options:\n\n' +
+          'Option 1 - gcloud CLI (easiest for local development):\n' +
+          '  gcloud auth application-default login\n' +
+          '  gcloud config set project ' + this.projectId + '\n\n' +
+          'Option 2 - Service Account (recommended for CI/CD and automation):\n' +
+          '  export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service-account-key.json"\n' +
+          '  export GCP_PROJECT_ID="' + this.projectId + '"\n\n' +
+          'Option 3 - Compute Engine (automatic on GCP VMs):\n' +
+          '  Runs automatically on GCP VMs with default service account\n\n' +
+          'For service account keys, see:\n' +
+          'https://cloud.google.com/iam/docs/keys-create-delete'
+        );
+      }
+      
       if (errorMsg.includes('authentication') || 
           errorMsg.includes('credentials') || 
           errorMsg.includes('permission') ||

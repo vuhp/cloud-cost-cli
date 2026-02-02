@@ -428,8 +428,13 @@ async function scanGCP(options: ScanCommandOptions) {
 
   // Test connection before scanning
   info('Testing GCP credentials...');
-  await client.testConnection();
-  success('GCP credentials verified ✓');
+  try {
+    await client.testConnection();
+    success('GCP credentials verified ✓');
+  } catch (err: any) {
+    error(err.message);
+    process.exit(1);
+  }
 
   // Run analyzers in parallel
   info('Analyzing Compute Engine instances...');
