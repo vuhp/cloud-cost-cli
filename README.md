@@ -7,7 +7,8 @@
 
 A command-line tool that analyzes your AWS, Azure, and GCP resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
-**✨ NEW in v0.5.0:** CSV and Excel export formats — perfect for sharing reports with your team!  
+**✨ NEW in v0.6.0:** 11 additional analyzers — Lambda, DynamoDB, ElastiCache, CosmosDB, and more!  
+**✨ v0.5.0:** CSV and Excel export formats — perfect for sharing reports with your team!  
 **✨ v0.4.0:** Full GCP support with 5 analyzers (Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs)  
 **✨ v0.3.0:** AI-powered explanations and natural language queries!
 
@@ -29,6 +30,9 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - Unused public IP addresses / static IPs
 - Underutilized resources that can be downsized
 - Storage without lifecycle policies
+- **NEW:** Unused Lambda functions, over-provisioned DynamoDB, idle ElastiCache clusters
+- **NEW:** Empty App Service Plans, CosmosDB optimization, old CloudWatch Logs
+- **NEW:** Wasteful NAT Gateways, inactive ECS services, stale snapshots
 
 ---
 
@@ -36,15 +40,17 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 
 **Current capabilities:**
 - ✅ **Multi-cloud support** - AWS, Azure, and GCP
-- ✅ **AWS analyzers** - EC2, EBS, RDS, S3, ELB, Elastic IP
-- ✅ **Azure analyzers** - VMs, Managed Disks, Storage, SQL, Public IPs
-- ✅ **GCP analyzers** - Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs
+- ✅ **21 analyzers across 3 clouds** (NEW in v0.6.0!)
+- ✅ **AWS analyzers (13)** - EC2, EBS, RDS, S3, ELB, Elastic IP, Lambda, NAT Gateway, DynamoDB, CloudWatch Logs, Snapshots, ElastiCache, ECS/Fargate
+- ✅ **Azure analyzers (8)** - VMs, Managed Disks, Storage, SQL, Public IPs, App Service Plans, Azure Functions, CosmosDB
+- ✅ **GCP analyzers (5)** - Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs
 - ✅ **🤖 AI-powered explanations** - Get human-readable explanations for why resources are costing money
 - ✅ **💬 Natural language queries** - Ask questions like "What's my biggest cost?" or "Show me idle VMs"
-- ✅ **📊 CSV & Excel export** - Export reports for sharing and analysis (NEW in v0.5.0!)
+- ✅ **📊 CSV & Excel export** - Export reports for sharing and analysis (v0.5.0)
 - ✅ **🔒 Privacy-first AI** - Use local Ollama or cloud OpenAI
 - ✅ **💰 Cost tracking** - Track AI API costs (OpenAI only)
 - ✅ **⚙️ Configuration file** - Save your preferences
+- ✅ **🛡️ Graceful error handling** - Missing permissions? Tool continues with available analyzers
 - ✅ Connect via cloud credentials (read-only recommended)
 - ✅ Analyze last 7-30 days of usage
 - ✅ Output top savings opportunities with estimated monthly savings
