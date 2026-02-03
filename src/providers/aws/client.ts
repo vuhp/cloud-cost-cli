@@ -9,6 +9,8 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { CloudWatchLogsClient } from '@aws-sdk/client-cloudwatch-logs';
 import { ElastiCacheClient } from '@aws-sdk/client-elasticache';
 import { ECSClient } from '@aws-sdk/client-ecs';
+import { CloudFrontClient } from '@aws-sdk/client-cloudfront';
+import { APIGatewayClient } from '@aws-sdk/client-api-gateway';
 import { fromIni, fromEnv } from '@aws-sdk/credential-providers';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -31,6 +33,8 @@ export class AWSClient {
   private cloudwatchLogs: CloudWatchLogsClient;
   private elasticache: ElastiCacheClient;
   private ecs: ECSClient;
+  private cloudfront: CloudFrontClient;
+  private apigateway: APIGatewayClient;
   public region: string;
   public profile: string;
 
@@ -56,6 +60,8 @@ export class AWSClient {
     this.cloudwatchLogs = new CloudWatchLogsClient({ region: this.region, credentials });
     this.elasticache = new ElastiCacheClient({ region: this.region, credentials });
     this.ecs = new ECSClient({ region: this.region, credentials });
+    this.cloudfront = new CloudFrontClient({ region: 'us-east-1', credentials });
+    this.apigateway = new APIGatewayClient({ region: this.region, credentials });
   }
 
   private getProfileRegion(profileName: string): string | null {
@@ -132,6 +138,14 @@ export class AWSClient {
 
   getECSClient() {
     return this.ecs;
+  }
+
+  getCloudFrontClient() {
+    return this.cloudfront;
+  }
+
+  getAPIGatewayClient() {
+    return this.apigateway;
   }
 
   // Get all enabled AWS regions

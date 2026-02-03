@@ -12,6 +12,8 @@ import { analyzeCloudWatchLogs } from '../providers/aws/cloudwatch-logs';
 import { analyzeSnapshots } from '../providers/aws/snapshots';
 import { analyzeElastiCache } from '../providers/aws/elasticache';
 import { analyzeECS } from '../providers/aws/ecs';
+import { analyzeCloudFrontDistributions } from '../providers/aws/cloudfront';
+import { analyzeAPIGateways } from '../providers/aws/apigateway';
 import { AzureClient } from '../providers/azure/client';
 import { analyzeAzureVMs } from '../providers/azure/vms';
 import { analyzeAzureDisks } from '../providers/azure/disks';
@@ -104,6 +106,8 @@ async function scanSingleRegionAWS(region: string, options: ScanCommandOptions):
   const snapshotsPromise = analyzeSnapshots(client);
   const elasticachePromise = analyzeElastiCache(client);
   const ecsPromise = analyzeECS(client);
+  const cloudfrontPromise = analyzeCloudFrontDistributions(client);
+  const apigatewayPromise = analyzeAPIGateways(client);
 
   // Wait for all analyzers to complete
   const [
@@ -120,6 +124,8 @@ async function scanSingleRegionAWS(region: string, options: ScanCommandOptions):
     snapshotsOpportunities,
     elasticacheOpportunities,
     ecsOpportunities,
+    cloudfrontOpportunities,
+    apigatewayOpportunities,
   ] = await Promise.all([
     ec2Promise,
     ebsPromise,
@@ -134,6 +140,8 @@ async function scanSingleRegionAWS(region: string, options: ScanCommandOptions):
     snapshotsPromise,
     elasticachePromise,
     ecsPromise,
+    cloudfrontPromise,
+    apigatewayPromise,
   ]);
 
   // Tag each opportunity with its region
@@ -153,6 +161,13 @@ async function scanSingleRegionAWS(region: string, options: ScanCommandOptions):
     ...tagOpportunities(eipOpportunities),
     ...tagOpportunities(lambdaOpportunities),
     ...tagOpportunities(natGatewayOpportunities),
+    ...tagOpportunities(dynamodbOpportunities),
+    ...tagOpportunities(cloudwatchLogsOpportunities),
+    ...tagOpportunities(snapshotsOpportunities),
+    ...tagOpportunities(elasticacheOpportunities),
+    ...tagOpportunities(ecsOpportunities),
+    ...tagOpportunities(cloudfrontOpportunities),
+    ...tagOpportunities(apigatewayOpportunities),
     ...tagOpportunities(dynamodbOpportunities),
     ...tagOpportunities(cloudwatchLogsOpportunities),
     ...tagOpportunities(snapshotsOpportunities),
@@ -222,6 +237,8 @@ async function scanAWS(options: ScanCommandOptions) {
     info('Analyzing Snapshots...');
     info('Analyzing ElastiCache clusters...');
     info('Analyzing ECS/Fargate...');
+    info('Analyzing CloudFront...');
+    info('Analyzing API Gateway...');
 
     // Run analyzers in parallel
     const ec2Promise = analyzeEC2Instances(client);
@@ -237,6 +254,8 @@ async function scanAWS(options: ScanCommandOptions) {
     const snapshotsPromise = analyzeSnapshots(client);
     const elasticachePromise = analyzeElastiCache(client);
     const ecsPromise = analyzeECS(client);
+    const cloudfrontPromise = analyzeCloudFrontDistributions(client);
+    const apigatewayPromise = analyzeAPIGateways(client);
 
     const [
       ec2Opportunities,
@@ -252,6 +271,8 @@ async function scanAWS(options: ScanCommandOptions) {
       snapshotsOpportunities,
       elasticacheOpportunities,
       ecsOpportunities,
+      cloudfrontOpportunities,
+      apigatewayOpportunities,
     ] = await Promise.all([
       ec2Promise,
       ebsPromise,
@@ -266,6 +287,8 @@ async function scanAWS(options: ScanCommandOptions) {
       snapshotsPromise,
       elasticachePromise,
       ecsPromise,
+      cloudfrontPromise,
+      apigatewayPromise,
     ]);
 
     success(`Found ${ec2Opportunities.length} EC2 opportunities`);
@@ -281,6 +304,8 @@ async function scanAWS(options: ScanCommandOptions) {
     success(`Found ${snapshotsOpportunities.length} Snapshot opportunities`);
     success(`Found ${elasticacheOpportunities.length} ElastiCache opportunities`);
     success(`Found ${ecsOpportunities.length} ECS/Fargate opportunities`);
+    success(`Found ${cloudfrontOpportunities.length} CloudFront opportunities`);
+    success(`Found ${apigatewayOpportunities.length} API Gateway opportunities`);
 
     allOpportunities = [
       ...ec2Opportunities,
@@ -296,6 +321,8 @@ async function scanAWS(options: ScanCommandOptions) {
       ...snapshotsOpportunities,
       ...elasticacheOpportunities,
       ...ecsOpportunities,
+      ...cloudfrontOpportunities,
+      ...apigatewayOpportunities,
     ];
   }
 
