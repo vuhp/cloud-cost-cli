@@ -7,8 +7,10 @@
 
 A command-line tool that analyzes your AWS, Azure, and GCP resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
-**✨ NEW in v0.6.2:** HTML export — Beautiful, interactive reports that auto-open in your browser!  
-**✨ NEW in v0.6.0:** 11 additional analyzers — Lambda, DynamoDB, ElastiCache, CosmosDB, and more!
+**✨ NEW:** Multi-region scanning — Scan all AWS regions at once!  
+**✨ NEW:** Comparison mode — Track your cost optimization progress over time!  
+**✨ v0.6.2:** HTML export — Beautiful, interactive reports that auto-open in your browser!  
+**✨ v0.6.0:** 11 additional analyzers — Lambda, DynamoDB, ElastiCache, CosmosDB, and more!
 
 ---
 
@@ -30,9 +32,12 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ **AWS analyzers (13)** - EC2, EBS, RDS, S3, ELB, Elastic IP, Lambda, NAT Gateway, DynamoDB, CloudWatch Logs, Snapshots, ElastiCache, ECS/Fargate
 - ✅ **Azure analyzers (8)** - VMs, Managed Disks, Storage, SQL, Public IPs, App Service Plans, Azure Functions, CosmosDB
 - ✅ **GCP analyzers (5)** - Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs
+- ✅ **🌍 Multi-region scanning** — Scan all AWS regions in one command (find forgotten resources!)
+- ✅ **📈 Comparison mode** — Track progress over time (see what you fixed vs what's new)
 - ✅ **🤖 AI-powered explanations** - Get human-readable explanations for why resources are costing money
 - ✅ **💬 Natural language queries** - Ask questions like "What's my biggest cost?" or "Show me idle VMs"
-- ✅ **📊 HTML, CSV & Excel export** - Beautiful reports for presentations and sharing (v0.6.2)
+- ✅ **📊 HTML, CSV & Excel export** - Beautiful reports for presentations and sharing
+- ✅ **🔁 CI/CD integration** - GitHub Action example for automated scanning
 - ✅ **🔒 Privacy-first AI** - Use local Ollama or cloud OpenAI
 - ✅ **💰 Cost tracking** - Track AI API costs (OpenAI only)
 - ✅ **⚙️ Configuration file** - Save your preferences
@@ -237,6 +242,122 @@ cloud-cost-cli scan --provider aws --output html
 - Interactive charts (pie chart by service, bar chart for top opportunities)
 - Sortable and searchable opportunity table
 - Responsive design (looks great on mobile)
+
+---
+
+### Multi-Region Scanning
+
+Scan all AWS regions at once to find resources you might have forgotten about:
+
+```bash
+cloud-cost-cli scan --provider aws --all-regions
+```
+
+**Features:**
+- Discovers all enabled AWS regions automatically
+- Scans regions in parallel (batches of 5 to avoid throttling)
+- Tags each resource with its region (`[us-west-2] i-abc123`)
+- Shows region breakdown in results
+- Gracefully handles regions with permission errors
+
+**Example output:**
+```
+📊 Region Breakdown:
+  us-east-1: 12 opportunities, $450.00/month
+  us-west-2: 5 opportunities, $180.50/month
+  eu-west-1: 3 opportunities, $95.25/month
+```
+
+---
+
+### Track Progress Over Time
+
+Compare scans to see your optimization progress:
+
+```bash
+# Run scans periodically (reports are saved automatically)
+cloud-cost-cli scan --provider aws
+
+# Later, compare with previous scan
+cloud-cost-cli compare
+```
+
+**Shows:**
+- ✅ **Resolved** - Opportunities you fixed
+- 🆕 **New** - New cost savings found
+- 📉 **Improved** - Opportunities that got better (savings reduced)
+- 📈 **Worsened** - Opportunities that got worse (more waste)
+- 💰 **Net change** - Overall improvement or regression
+
+**Example output:**
+```
+📊 Cost Optimization Comparison Report
+
+Summary:
+  Previous potential savings: $1,245.00/month
+  Current potential savings:  $890.50/month
+  Net change: 📉 -$354.50/month
+
+  ✅ Potential savings DECREASED - great progress!
+
+✅ Resolved Opportunities (3):
+   Total savings achieved: $210.00/month
+
+🆕 New Opportunities (2):
+   Additional waste found: $85.50/month
+```
+
+**Compare specific reports:**
+```bash
+cloud-cost-cli compare --from scan-2026-01-01.json --to scan-2026-02-01.json
+```
+
+---
+
+### CI/CD Integration
+
+Add automated cost scanning to your CI/CD pipeline:
+
+**GitHub Action Example** (see `examples/github-action/` in this repo):
+
+```yaml
+name: Cloud Cost Scan
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Weekly on Monday
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - run: npm install -g cloud-cost-cli
+      - run: cloud-cost-cli scan --provider aws --output html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cost-report
+          path: cloud-cost-report-*.html
+```
+
+**Features:**
+- Scheduled scans (weekly, daily, or on-demand)
+- Automated reports as artifacts
+- PR comments with scan summaries
+- Fail builds if savings exceed threshold
+- Support for AWS, Azure, and GCP
+
+**Copy the example:**
+```bash
+cp examples/github-action/workflow.yml .github/workflows/cloud-cost-scan.yml
+```
+
+Then add your cloud credentials as GitHub Secrets.
 - Auto-opens in your default browser
 - Perfect for:
   - 📧 Email as attachment (managers don't need CLI!)
