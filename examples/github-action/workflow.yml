@@ -1,0 +1,176 @@
+name: Cloud Cost Scan
+
+on:
+  # Run on schedule (weekly on Monday at 9 AM UTC)
+  schedule:
+    - cron: '0 9 * * 1'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: 'Cloud provider to scan'
+        required: true
+        default: 'aws'
+        type: choice
+        options:
+          - aws
+          - azure
+          - gcp
+      region:
+        description: 'Region to scan (optional)'
+        required: false
+        default: 'us-east-1'
+      all_regions:
+        description: 'Scan all regions (AWS only)'
+        required: false
+        default: false
+        type: boolean
+      min_savings:
+        description: 'Minimum savings threshold ($/month)'
+        required: false
+        default: '10'
+      fail_threshold:
+        description: 'Fail if savings exceed this amount'
+        required: false
+        default: '1000'
+
+jobs:
+  cost-scan:
+    name: Scan for Cost Savings
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install cloud-cost-cli
+        run: npm install -g cloud-cost-cli
+      
+      - name: Configure AWS credentials
+        if: github.event.inputs.provider == 'aws' || github.event.inputs.provider == ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ github.event.inputs.region || 'us-east-1' }}
+      
+      - name: Configure Azure credentials
+        if: github.event.inputs.provider == 'azure'
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Configure GCP credentials
+        if: github.event.inputs.provider == 'gcp'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      
+      - name: Run cost scan
+        id: scan
+        run: |
+          PROVIDER="${{ github.event.inputs.provider || 'aws' }}"
+          REGION="${{ github.event.inputs.region || 'us-east-1' }}"
+          MIN_SAVINGS="${{ github.event.inputs.min_savings || '10' }}"
+          ALL_REGIONS="${{ github.event.inputs.all_regions }}"
+          
+          if [ "$ALL_REGIONS" == "true" ] && [ "$PROVIDER" == "aws" ]; then
+            echo "Scanning all AWS regions..."
+            cloud-cost-cli scan \
+              --provider "$PROVIDER" \
+              --all-regions \
+              --min-savings "$MIN_SAVINGS" \
+              --output json \
+              > scan-results.json
+          else
+            echo "Scanning $PROVIDER in region $REGION..."
+            cloud-cost-cli scan \
+              --provider "$PROVIDER" \
+              --region "$REGION" \
+              --min-savings "$MIN_SAVINGS" \
+              --output json \
+              > scan-results.json
+          fi
+          
+          # Extract key metrics
+          TOTAL_OPPORTUNITIES=$(jq '.opportunities | length' scan-results.json)
+          TOTAL_SAVINGS=$(jq '.totalPotentialSavings' scan-results.json)
+          
+          echo "total_opportunities=$TOTAL_OPPORTUNITIES" >> $GITHUB_OUTPUT
+          echo "total_savings=$TOTAL_SAVINGS" >> $GITHUB_OUTPUT
+          
+          echo "Found $TOTAL_OPPORTUNITIES opportunities"
+          echo "Total potential savings: \$$TOTAL_SAVINGS/month"
+      
+      - name: Generate HTML report
+        run: |
+          PROVIDER="${{ github.event.inputs.provider || 'aws' }}"
+          REGION="${{ github.event.inputs.region || 'us-east-1' }}"
+          ALL_REGIONS="${{ github.event.inputs.all_regions }}"
+          
+          if [ "$ALL_REGIONS" == "true" ] && [ "$PROVIDER" == "aws" ]; then
+            cloud-cost-cli scan \
+              --provider "$PROVIDER" \
+              --all-regions \
+              --output html
+          else
+            cloud-cost-cli scan \
+              --provider "$PROVIDER" \
+              --region "$REGION" \
+              --output html
+          fi
+      
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-cost-report
+          path: cloud-cost-report-*.html
+          retention-days: 30
+      
+      - name: Post summary to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('scan-results.json', 'utf8'));
+            
+            const top5 = results.opportunities.slice(0, 5);
+            let markdown = `## 💰 Cloud Cost Scan Results\n\n`;
+            markdown += `**Total Potential Savings:** $${results.totalPotentialSavings.toFixed(2)}/month\n\n`;
+            markdown += `**Opportunities Found:** ${results.opportunities.length}\n\n`;
+            markdown += `### Top 5 Savings Opportunities\n\n`;
+            markdown += `| Type | Resource | Recommendation | Monthly Savings |\n`;
+            markdown += `|------|----------|----------------|-----------------|\n`;
+            
+            top5.forEach(opp => {
+              markdown += `| ${opp.resourceType} | ${opp.resourceId.substring(0, 30)}... | ${opp.recommendation.substring(0, 40)}... | $${opp.estimatedSavings.toFixed(2)} |\n`;
+            });
+            
+            markdown += `\n[View full report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: markdown
+            });
+      
+      - name: Check savings threshold
+        run: |
+          TOTAL_SAVINGS="${{ steps.scan.outputs.total_savings }}"
+          THRESHOLD="${{ github.event.inputs.fail_threshold || '1000' }}"
+          
+          if (( $(echo "$TOTAL_SAVINGS > $THRESHOLD" | bc -l) )); then
+            echo "❌ Cost savings opportunity ($$TOTAL_SAVINGS/month) exceeds threshold ($$THRESHOLD/month)"
+            echo "Review the scan results and take action to reduce costs"
+            exit 1
+          else
+            echo "✅ Cost savings opportunity ($$TOTAL_SAVINGS/month) is within acceptable range"
+          fi

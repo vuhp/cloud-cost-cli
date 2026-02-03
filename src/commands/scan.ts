@@ -37,6 +37,7 @@ import { exportToHtml } from '../reporters/html';
 import { error, info, success } from '../utils/logger';
 import { AIService } from '../services/ai';
 import { saveScanCache } from './ask';
+import { saveReport } from './compare';
 import { ConfigLoader } from '../utils/config';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -44,6 +45,7 @@ import * as path from 'path';
 interface ScanCommandOptions {
   provider: string;
   region?: string;
+  allRegions?: boolean;
   profile?: string;
   subscriptionId?: string;
   location?: string;
@@ -80,8 +82,121 @@ export async function scanCommand(options: ScanCommandOptions) {
   }
 }
 
-async function scanAWS(options: ScanCommandOptions) {
+async function scanSingleRegionAWS(region: string, options: ScanCommandOptions): Promise<SavingsOpportunity[]> {
+  const client = new AWSClient({
+    region: region,
+    profile: options.profile,
+  });
 
+  info(`Scanning region: ${region}...`);
+
+  // Run analyzers in parallel
+  const ec2Promise = analyzeEC2Instances(client);
+  const ebsPromise = analyzeEBSVolumes(client);
+  const rdsPromise = analyzeRDSInstances(client);
+  const s3Promise = analyzeS3Buckets(client);
+  const elbPromise = analyzeELBs(client);
+  const eipPromise = analyzeElasticIPs(client);
+  const lambdaPromise = analyzeLambdaFunctions(client);
+  const natGatewayPromise = analyzeNATGateways(client);
+  const dynamodbPromise = analyzeDynamoDBTables(client);
+  const cloudwatchLogsPromise = analyzeCloudWatchLogs(client);
+  const snapshotsPromise = analyzeSnapshots(client);
+  const elasticachePromise = analyzeElastiCache(client);
+  const ecsPromise = analyzeECS(client);
+
+  // Wait for all analyzers to complete
+  const [
+    ec2Opportunities,
+    ebsOpportunities,
+    rdsOpportunities,
+    s3Opportunities,
+    elbOpportunities,
+    eipOpportunities,
+    lambdaOpportunities,
+    natGatewayOpportunities,
+    dynamodbOpportunities,
+    cloudwatchLogsOpportunities,
+    snapshotsOpportunities,
+    elasticacheOpportunities,
+    ecsOpportunities,
+  ] = await Promise.all([
+    ec2Promise,
+    ebsPromise,
+    rdsPromise,
+    s3Promise,
+    elbPromise,
+    eipPromise,
+    lambdaPromise,
+    natGatewayPromise,
+    dynamodbPromise,
+    cloudwatchLogsPromise,
+    snapshotsPromise,
+    elasticachePromise,
+    ecsPromise,
+  ]);
+
+  // Tag each opportunity with its region
+  const regionTag = `[${region}] `;
+  const tagOpportunities = (opps: SavingsOpportunity[]): SavingsOpportunity[] =>
+    opps.map(opp => ({
+      ...opp,
+      resourceId: regionTag + opp.resourceId,
+    }));
+
+  return [
+    ...tagOpportunities(ec2Opportunities),
+    ...tagOpportunities(ebsOpportunities),
+    ...tagOpportunities(rdsOpportunities),
+    ...tagOpportunities(s3Opportunities),
+    ...tagOpportunities(elbOpportunities),
+    ...tagOpportunities(eipOpportunities),
+    ...tagOpportunities(lambdaOpportunities),
+    ...tagOpportunities(natGatewayOpportunities),
+    ...tagOpportunities(dynamodbOpportunities),
+    ...tagOpportunities(cloudwatchLogsOpportunities),
+    ...tagOpportunities(snapshotsOpportunities),
+    ...tagOpportunities(elasticacheOpportunities),
+    ...tagOpportunities(ecsOpportunities),
+  ];
+}
+
+async function scanAWS(options: ScanCommandOptions) {
+  let allOpportunities: SavingsOpportunity[] = [];
+  let scannedRegions: string[] = [];
+
+  if (options.allRegions) {
+    info(`Scanning all AWS regions (profile: ${options.profile || 'default'})...`);
+    info('This may take a few minutes...\n');
+
+    const regions = await AWSClient.getAllRegionsStatic(options.profile);
+    info(`Found ${regions.length} enabled regions: ${regions.join(', ')}\n`);
+
+    // Scan regions in batches of 5 to avoid overwhelming the API
+    const batchSize = 5;
+    for (let i = 0; i < regions.length; i += batchSize) {
+      const batch = regions.slice(i, i + batchSize);
+      info(`Scanning batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(regions.length / batchSize)}: ${batch.join(', ')}`);
+      
+      const batchResults = await Promise.all(
+        batch.map(region => scanSingleRegionAWS(region, options).catch(err => {
+          info(`⚠️  Skipped ${region}: ${err.message}`);
+          return [] as SavingsOpportunity[];
+        }))
+      );
+      
+      batchResults.forEach((results, idx) => {
+        if (results.length > 0) {
+          success(`✓ ${batch[idx]}: Found ${results.length} opportunities`);
+          scannedRegions.push(batch[idx]);
+        }
+      });
+      
+      allOpportunities = allOpportunities.concat(...batchResults);
+    }
+
+    success(`\n✓ Completed multi-region scan across ${scannedRegions.length} regions`);
+  } else {
     const client = new AWSClient({
       region: options.region,
       profile: options.profile,
@@ -94,47 +209,35 @@ async function scanAWS(options: ScanCommandOptions) {
       info('Real-time pricing will be available in a future release.');
     }
 
-    // Run analyzers in parallel
     info('Analyzing EC2 instances...');
-    const ec2Promise = analyzeEC2Instances(client);
-
     info('Analyzing EBS volumes...');
-    const ebsPromise = analyzeEBSVolumes(client);
-
     info('Analyzing RDS instances...');
-    const rdsPromise = analyzeRDSInstances(client);
-
     info('Analyzing S3 buckets...');
-    const s3Promise = analyzeS3Buckets(client);
-
     info('Analyzing Load Balancers...');
-    const elbPromise = analyzeELBs(client);
-
     info('Analyzing Elastic IPs...');
-    const eipPromise = analyzeElasticIPs(client);
-
     info('Analyzing Lambda functions...');
-    const lambdaPromise = analyzeLambdaFunctions(client);
-
     info('Analyzing NAT Gateways...');
-    const natGatewayPromise = analyzeNATGateways(client);
-
     info('Analyzing DynamoDB tables...');
-    const dynamodbPromise = analyzeDynamoDBTables(client);
-
     info('Analyzing CloudWatch Logs...');
-    const cloudwatchLogsPromise = analyzeCloudWatchLogs(client);
-
     info('Analyzing Snapshots...');
-    const snapshotsPromise = analyzeSnapshots(client);
-
     info('Analyzing ElastiCache clusters...');
-    const elasticachePromise = analyzeElastiCache(client);
-
     info('Analyzing ECS/Fargate...');
+
+    // Run analyzers in parallel
+    const ec2Promise = analyzeEC2Instances(client);
+    const ebsPromise = analyzeEBSVolumes(client);
+    const rdsPromise = analyzeRDSInstances(client);
+    const s3Promise = analyzeS3Buckets(client);
+    const elbPromise = analyzeELBs(client);
+    const eipPromise = analyzeElasticIPs(client);
+    const lambdaPromise = analyzeLambdaFunctions(client);
+    const natGatewayPromise = analyzeNATGateways(client);
+    const dynamodbPromise = analyzeDynamoDBTables(client);
+    const cloudwatchLogsPromise = analyzeCloudWatchLogs(client);
+    const snapshotsPromise = analyzeSnapshots(client);
+    const elasticachePromise = analyzeElastiCache(client);
     const ecsPromise = analyzeECS(client);
 
-    // Wait for all analyzers to complete
     const [
       ec2Opportunities,
       ebsOpportunities,
@@ -179,8 +282,7 @@ async function scanAWS(options: ScanCommandOptions) {
     success(`Found ${elasticacheOpportunities.length} ElastiCache opportunities`);
     success(`Found ${ecsOpportunities.length} ECS/Fargate opportunities`);
 
-    // Combine opportunities
-    const allOpportunities: SavingsOpportunity[] = [
+    allOpportunities = [
       ...ec2Opportunities,
       ...ebsOpportunities,
       ...rdsOpportunities,
@@ -195,6 +297,7 @@ async function scanAWS(options: ScanCommandOptions) {
       ...elasticacheOpportunities,
       ...ecsOpportunities,
     ];
+  }
 
     // Filter by minimum savings if specified
     const minSavings = options.minSavings ? parseFloat(options.minSavings) : 0;
@@ -218,7 +321,7 @@ async function scanAWS(options: ScanCommandOptions) {
     const report: ScanReport = {
       provider: 'aws',
       accountId: 'N/A', // Will fetch from STS in future
-      region: client.region,
+      region: options.allRegions ? `multi-region (${scannedRegions.length} regions)` : (options.region || 'us-east-1'),
       scanPeriod: {
         start: new Date(Date.now() - (parseInt(options.days || '30') * 24 * 60 * 60 * 1000)),
         end: new Date(),
@@ -227,6 +330,27 @@ async function scanAWS(options: ScanCommandOptions) {
       totalPotentialSavings,
       summary,
     };
+
+    // Show region breakdown for multi-region scans
+    if (options.allRegions) {
+      info('\n📊 Region Breakdown:');
+      const regionGroups = filteredOpportunities.reduce((acc, opp) => {
+        const match = opp.resourceId.match(/^\[([^\]]+)\]/);
+        const region = match ? match[1] : 'unknown';
+        acc[region] = (acc[region] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      Object.entries(regionGroups)
+        .sort(([, a], [, b]) => b - a)
+        .forEach(([region, count]) => {
+          const regionSavings = filteredOpportunities
+            .filter(o => o.resourceId.startsWith(`[${region}]`))
+            .reduce((sum, o) => sum + o.estimatedSavings, 0);
+          info(`  ${region}: ${count} opportunities, $${regionSavings.toFixed(2)}/month`);
+        });
+      info('');
+    }
 
     // Render output
     const topN = parseInt(options.top || '5');
@@ -276,6 +400,10 @@ async function scanAWS(options: ScanCommandOptions) {
     
     // Save scan cache for natural language queries
     saveScanCache(options.provider, options.region, report);
+    
+    // Save report for comparison tracking
+    const savedPath = saveReport(report);
+    info(`Report saved for comparison: ${path.basename(savedPath)}`);
     
     // Handle output format
     if (options.output === 'json') {

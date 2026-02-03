@@ -1,4 +1,4 @@
-import { EC2Client } from '@aws-sdk/client-ec2';
+import { EC2Client, DescribeRegionsCommand } from '@aws-sdk/client-ec2';
 import { CloudWatchClient } from '@aws-sdk/client-cloudwatch';
 import { CostExplorerClient } from '@aws-sdk/client-cost-explorer';
 import { RDSClient } from '@aws-sdk/client-rds';
@@ -132,5 +132,54 @@ export class AWSClient {
 
   getECSClient() {
     return this.ecs;
+  }
+
+  // Get all enabled AWS regions
+  async getAllRegions(): Promise<string[]> {
+    try {
+      const command = new DescribeRegionsCommand({
+        AllRegions: false, // Only enabled regions
+      });
+      const response = await this.ec2.send(command);
+      return (response.Regions || [])
+        .map(r => r.RegionName)
+        .filter((name): name is string => !!name)
+        .sort();
+    } catch (error) {
+      // Fallback to common regions if API fails
+      return [
+        'us-east-1', 'us-east-2', 'us-west-1', 'us-west-2',
+        'eu-west-1', 'eu-west-2', 'eu-west-3', 'eu-central-1',
+        'ap-southeast-1', 'ap-southeast-2', 'ap-northeast-1',
+        'ca-central-1', 'sa-east-1'
+      ];
+    }
+  }
+
+  // Static method to get regions without an instance
+  static async getAllRegionsStatic(profile?: string): Promise<string[]> {
+    const credentials = process.env.AWS_ACCESS_KEY_ID
+      ? fromEnv()
+      : fromIni({ profile: profile || 'default' });
+    
+    const ec2 = new EC2Client({ region: 'us-east-1', credentials });
+    
+    try {
+      const command = new DescribeRegionsCommand({
+        AllRegions: false,
+      });
+      const response = await ec2.send(command);
+      return (response.Regions || [])
+        .map(r => r.RegionName)
+        .filter((name): name is string => !!name)
+        .sort();
+    } catch (error) {
+      return [
+        'us-east-1', 'us-east-2', 'us-west-1', 'us-west-2',
+        'eu-west-1', 'eu-west-2', 'eu-west-3', 'eu-central-1',
+        'ap-southeast-1', 'ap-southeast-2', 'ap-northeast-1',
+        'ca-central-1', 'sa-east-1'
+      ];
+    }
   }
 }

@@ -7,8 +7,10 @@
 
 A command-line tool that analyzes your AWS, Azure, and GCP resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
-**✨ NEW in v0.6.2:** HTML export — Beautiful, interactive reports that auto-open in your browser!  
-**✨ NEW in v0.6.0:** 11 additional analyzers — Lambda, DynamoDB, ElastiCache, CosmosDB, and more!
+**✨ NEW:** Multi-region scanning — Scan all AWS regions at once!  
+**✨ NEW:** Comparison mode — Track your cost optimization progress over time!  
+**✨ v0.6.2:** HTML export — Beautiful, interactive reports that auto-open in your browser!  
+**✨ v0.6.0:** 11 additional analyzers — Lambda, DynamoDB, ElastiCache, CosmosDB, and more!
 
 ---
 
@@ -30,9 +32,12 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 - ✅ **AWS analyzers (13)** - EC2, EBS, RDS, S3, ELB, Elastic IP, Lambda, NAT Gateway, DynamoDB, CloudWatch Logs, Snapshots, ElastiCache, ECS/Fargate
 - ✅ **Azure analyzers (8)** - VMs, Managed Disks, Storage, SQL, Public IPs, App Service Plans, Azure Functions, CosmosDB
 - ✅ **GCP analyzers (5)** - Compute Engine, Cloud Storage, Cloud SQL, Persistent Disks, Static IPs
+- ✅ **🌍 Multi-region scanning** — Scan all AWS regions in one command (find forgotten resources!)
+- ✅ **📈 Comparison mode** — Track progress over time (see what you fixed vs what's new)
 - ✅ **🤖 AI-powered explanations** - Get human-readable explanations for why resources are costing money
 - ✅ **💬 Natural language queries** - Ask questions like "What's my biggest cost?" or "Show me idle VMs"
-- ✅ **📊 HTML, CSV & Excel export** - Beautiful reports for presentations and sharing (v0.6.2)
+- ✅ **📊 HTML, CSV & Excel export** - Beautiful reports for presentations and sharing
+- ✅ **🔁 CI/CD integration** - GitHub Action example for automated scanning
 - ✅ **🔒 Privacy-first AI** - Use local Ollama or cloud OpenAI
 - ✅ **💰 Cost tracking** - Track AI API costs (OpenAI only)
 - ✅ **⚙️ Configuration file** - Save your preferences
@@ -49,21 +54,8 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 
 **Requirements:**
 - Node.js >= 18
-- Cloud credentials (choose one per provider):
-  - **AWS**: 
-    - [AWS CLI configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) OR
-    - Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
-  - **Azure**:
-    - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) (`az login`) OR
-    - Service Principal (env vars: `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`) OR
-    - Managed Identity (for Azure VMs)
-  - **GCP**:
-    - [gcloud CLI](https://cloud.google.com/sdk/docs/install) (`gcloud auth application-default login`) OR
-    - Service Account JSON key (env var: `GOOGLE_APPLICATION_CREDENTIALS`) OR
-    - Compute Engine default credentials (for GCP VMs)
-- **Optional for AI features**:
-  - OpenAI API key OR
-  - [Ollama](https://ollama.ai) installed locally (free, private, runs on your machine)
+- Cloud credentials (AWS CLI, Azure CLI, or gcloud CLI configured)
+- Optional: OpenAI API key or [Ollama](https://ollama.ai) for AI features
 
 **Install via npm:**
 ```bash
@@ -113,17 +105,10 @@ cloud-cost-cli scan --provider gcp --region us-central1
 cloud-cost-cli scan --provider gcp --project-id your-project-id --region us-central1
 ```
 
-**How to create Azure Service Principal:**
+**Create Azure Service Principal:**
 ```bash
-# Create service principal with Reader role
 az ad sp create-for-rbac --name "cloud-cost-cli" --role Reader --scopes /subscriptions/YOUR_SUBSCRIPTION_ID
-
-# Output will show:
-# {
-#   "appId": "xxx",          # Use as AZURE_CLIENT_ID
-#   "password": "xxx",       # Use as AZURE_CLIENT_SECRET
-#   "tenant": "xxx"          # Use as AZURE_TENANT_ID
-# }
+# Use appId → AZURE_CLIENT_ID, password → AZURE_CLIENT_SECRET, tenant → AZURE_TENANT_ID
 ```
 
 ### 🤖 AI-Powered Features
@@ -150,25 +135,11 @@ cloud-cost-cli ask "How much can I save on storage?"
 cloud-cost-cli ask "Which resources should I optimize first?"
 ```
 
-**Configure AI settings (saves preferences):**
+**Configure AI settings:**
 ```bash
-# Initialize config file
 cloud-cost-cli config init
-
-# Set AI provider (openai or ollama)
-cloud-cost-cli config set ai.provider ollama
-
-# Set OpenAI API key (if using OpenAI)
-cloud-cost-cli config set ai.apiKey "sk-..."
-
-# Set AI model
-cloud-cost-cli config set ai.model "llama3.1:8b"  # For Ollama
-cloud-cost-cli config set ai.model "gpt-4o-mini"  # For OpenAI
-
-# Set max explanations (how many to explain)
-cloud-cost-cli config set ai.maxExplanations 5
-
-# View your config
+cloud-cost-cli config set ai.provider ollama  # or openai
+cloud-cost-cli config set ai.model "llama3.1:8b"
 cloud-cost-cli config show
 ```
 
@@ -224,19 +195,45 @@ cloud-cost-cli scan --provider aws --output html
 | **excel** | Reports & sharing | Summary sheet, rich formatting |
 | **html** | Presentations & web | Interactive charts, shareable link |
 
-**Excel Export Features:**
-- Summary worksheet with total savings by category
-- Detailed opportunities worksheet with all findings
-- Color-coded categories and confidence levels
-- Formatted currency and auto-sized columns
-- Frozen headers for easy scrolling
-- Professional look, ready to share with management
+**Excel:** Summary sheets, color-coded categories, formatted currency  
+**HTML:** Interactive charts, sortable tables, mobile-friendly
 
-**HTML Export Features (NEW in v0.6.2):**
-- Beautiful, self-contained HTML file (works offline)
-- Interactive charts (pie chart by service, bar chart for top opportunities)
-- Sortable and searchable opportunity table
-- Responsive design (looks great on mobile)
+---
+
+### Multi-Region Scanning
+
+Scan all AWS regions at once:
+
+```bash
+cloud-cost-cli scan --provider aws --all-regions
+```
+
+Finds resources across all enabled regions, tags them with region (`[us-west-2] i-abc123`), and shows regional breakdown.
+
+---
+
+### Track Progress Over Time
+
+Compare scans to see your optimization progress:
+
+```bash
+cloud-cost-cli scan --provider aws
+cloud-cost-cli compare  # Compare with previous scan
+```
+
+Shows: ✅ Resolved opportunities, 🆕 New findings, 📉 Improvements, 📈 Worsening, 💰 Net change.
+
+---
+
+### CI/CD Integration
+
+Automated scanning with GitHub Actions (see `examples/github-action/`):
+
+```bash
+cp examples/github-action/workflow.yml .github/workflows/cloud-cost-scan.yml
+```
+
+Supports scheduled scans, PR comments, and build failure on cost thresholds.
 - Auto-opens in your default browser
 - Perfect for:
   - 📧 Email as attachment (managers don't need CLI!)

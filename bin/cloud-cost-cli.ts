@@ -4,19 +4,21 @@ import { scanCommand } from '../src/commands/scan.js';
 import { askCommand } from '../src/commands/ask.js';
 import { configCommand } from '../src/commands/config.js';
 import { costsCommand } from '../src/commands/costs.js';
+import { compareCommand } from '../src/commands/compare.js';
 
 const program = new Command();
 
 program
   .name('cloud-cost-cli')
   .description('Optimize your cloud spend in seconds')
-  .version('0.6.2');
+  .version('0.6.3');
 
 program
   .command('scan')
   .description('Scan cloud account for cost savings')
   .option('--provider <aws|azure|gcp>', 'Cloud provider', 'aws')
   .option('--region <region>', 'Cloud region (e.g., us-east-1 for AWS, us-central1 for GCP)')
+  .option('--all-regions', 'Scan all AWS regions (AWS only)')
   .option('--profile <profile>', 'AWS profile name', 'default')
   .option('--subscription-id <id>', 'Azure subscription ID')
   .option('--location <location>', 'Azure location filter (e.g., eastus, westus2) - optional, scans all if omitted')
@@ -50,5 +52,13 @@ program
   .option('--days <N>', 'Number of days to include', '30')
   .option('--clear', 'Clear cost tracking data')
   .action(costsCommand);
+
+program
+  .command('compare')
+  .description('Compare two scan reports to track progress')
+  .option('--from <path>', 'Path to older scan report')
+  .option('--to <path>', 'Path to newer scan report')
+  .option('--output <format>', 'Output format: table, json', 'table')
+  .action(compareCommand);
 
 program.parse();
