@@ -54,21 +54,8 @@ Cloud bills are growing faster than revenue. Engineering teams overprovision, fo
 
 **Requirements:**
 - Node.js >= 18
-- Cloud credentials (choose one per provider):
-  - **AWS**: 
-    - [AWS CLI configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) OR
-    - Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
-  - **Azure**:
-    - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) (`az login`) OR
-    - Service Principal (env vars: `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`) OR
-    - Managed Identity (for Azure VMs)
-  - **GCP**:
-    - [gcloud CLI](https://cloud.google.com/sdk/docs/install) (`gcloud auth application-default login`) OR
-    - Service Account JSON key (env var: `GOOGLE_APPLICATION_CREDENTIALS`) OR
-    - Compute Engine default credentials (for GCP VMs)
-- **Optional for AI features**:
-  - OpenAI API key OR
-  - [Ollama](https://ollama.ai) installed locally (free, private, runs on your machine)
+- Cloud credentials (AWS CLI, Azure CLI, or gcloud CLI configured)
+- Optional: OpenAI API key or [Ollama](https://ollama.ai) for AI features
 
 **Install via npm:**
 ```bash
@@ -118,17 +105,10 @@ cloud-cost-cli scan --provider gcp --region us-central1
 cloud-cost-cli scan --provider gcp --project-id your-project-id --region us-central1
 ```
 
-**How to create Azure Service Principal:**
+**Create Azure Service Principal:**
 ```bash
-# Create service principal with Reader role
 az ad sp create-for-rbac --name "cloud-cost-cli" --role Reader --scopes /subscriptions/YOUR_SUBSCRIPTION_ID
-
-# Output will show:
-# {
-#   "appId": "xxx",          # Use as AZURE_CLIENT_ID
-#   "password": "xxx",       # Use as AZURE_CLIENT_SECRET
-#   "tenant": "xxx"          # Use as AZURE_TENANT_ID
-# }
+# Use appId → AZURE_CLIENT_ID, password → AZURE_CLIENT_SECRET, tenant → AZURE_TENANT_ID
 ```
 
 ### 🤖 AI-Powered Features
@@ -155,25 +135,11 @@ cloud-cost-cli ask "How much can I save on storage?"
 cloud-cost-cli ask "Which resources should I optimize first?"
 ```
 
-**Configure AI settings (saves preferences):**
+**Configure AI settings:**
 ```bash
-# Initialize config file
 cloud-cost-cli config init
-
-# Set AI provider (openai or ollama)
-cloud-cost-cli config set ai.provider ollama
-
-# Set OpenAI API key (if using OpenAI)
-cloud-cost-cli config set ai.apiKey "sk-..."
-
-# Set AI model
-cloud-cost-cli config set ai.model "llama3.1:8b"  # For Ollama
-cloud-cost-cli config set ai.model "gpt-4o-mini"  # For OpenAI
-
-# Set max explanations (how many to explain)
-cloud-cost-cli config set ai.maxExplanations 5
-
-# View your config
+cloud-cost-cli config set ai.provider ollama  # or openai
+cloud-cost-cli config set ai.model "llama3.1:8b"
 cloud-cost-cli config show
 ```
 
@@ -229,44 +195,20 @@ cloud-cost-cli scan --provider aws --output html
 | **excel** | Reports & sharing | Summary sheet, rich formatting |
 | **html** | Presentations & web | Interactive charts, shareable link |
 
-**Excel Export Features:**
-- Summary worksheet with total savings by category
-- Detailed opportunities worksheet with all findings
-- Color-coded categories and confidence levels
-- Formatted currency and auto-sized columns
-- Frozen headers for easy scrolling
-- Professional look, ready to share with management
-
-**HTML Export Features (NEW in v0.6.2):**
-- Beautiful, self-contained HTML file (works offline)
-- Interactive charts (pie chart by service, bar chart for top opportunities)
-- Sortable and searchable opportunity table
-- Responsive design (looks great on mobile)
+**Excel:** Summary sheets, color-coded categories, formatted currency  
+**HTML:** Interactive charts, sortable tables, mobile-friendly
 
 ---
 
 ### Multi-Region Scanning
 
-Scan all AWS regions at once to find resources you might have forgotten about:
+Scan all AWS regions at once:
 
 ```bash
 cloud-cost-cli scan --provider aws --all-regions
 ```
 
-**Features:**
-- Discovers all enabled AWS regions automatically
-- Scans regions in parallel (batches of 5 to avoid throttling)
-- Tags each resource with its region (`[us-west-2] i-abc123`)
-- Shows region breakdown in results
-- Gracefully handles regions with permission errors
-
-**Example output:**
-```
-📊 Region Breakdown:
-  us-east-1: 12 opportunities, $450.00/month
-  us-west-2: 5 opportunities, $180.50/month
-  eu-west-1: 3 opportunities, $95.25/month
-```
+Finds resources across all enabled regions, tags them with region (`[us-west-2] i-abc123`), and shows regional breakdown.
 
 ---
 
@@ -275,89 +217,23 @@ cloud-cost-cli scan --provider aws --all-regions
 Compare scans to see your optimization progress:
 
 ```bash
-# Run scans periodically (reports are saved automatically)
 cloud-cost-cli scan --provider aws
-
-# Later, compare with previous scan
-cloud-cost-cli compare
+cloud-cost-cli compare  # Compare with previous scan
 ```
 
-**Shows:**
-- ✅ **Resolved** - Opportunities you fixed
-- 🆕 **New** - New cost savings found
-- 📉 **Improved** - Opportunities that got better (savings reduced)
-- 📈 **Worsened** - Opportunities that got worse (more waste)
-- 💰 **Net change** - Overall improvement or regression
-
-**Example output:**
-```
-📊 Cost Optimization Comparison Report
-
-Summary:
-  Previous potential savings: $1,245.00/month
-  Current potential savings:  $890.50/month
-  Net change: 📉 -$354.50/month
-
-  ✅ Potential savings DECREASED - great progress!
-
-✅ Resolved Opportunities (3):
-   Total savings achieved: $210.00/month
-
-🆕 New Opportunities (2):
-   Additional waste found: $85.50/month
-```
-
-**Compare specific reports:**
-```bash
-cloud-cost-cli compare --from scan-2026-01-01.json --to scan-2026-02-01.json
-```
+Shows: ✅ Resolved opportunities, 🆕 New findings, 📉 Improvements, 📈 Worsening, 💰 Net change.
 
 ---
 
 ### CI/CD Integration
 
-Add automated cost scanning to your CI/CD pipeline:
+Automated scanning with GitHub Actions (see `examples/github-action/`):
 
-**GitHub Action Example** (see `examples/github-action/` in this repo):
-
-```yaml
-name: Cloud Cost Scan
-on:
-  schedule:
-    - cron: '0 9 * * 1'  # Weekly on Monday
-  workflow_dispatch:
-
-jobs:
-  scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-      - run: npm install -g cloud-cost-cli
-      - run: cloud-cost-cli scan --provider aws --output html
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cost-report
-          path: cloud-cost-report-*.html
-```
-
-**Features:**
-- Scheduled scans (weekly, daily, or on-demand)
-- Automated reports as artifacts
-- PR comments with scan summaries
-- Fail builds if savings exceed threshold
-- Support for AWS, Azure, and GCP
-
-**Copy the example:**
 ```bash
 cp examples/github-action/workflow.yml .github/workflows/cloud-cost-scan.yml
 ```
 
-Then add your cloud credentials as GitHub Secrets.
+Supports scheduled scans, PR comments, and build failure on cost thresholds.
 - Auto-opens in your default browser
 - Perfect for:
   - 📧 Email as attachment (managers don't need CLI!)
