@@ -37,6 +37,7 @@ import { exportToHtml } from '../reporters/html';
 import { error, info, success } from '../utils/logger';
 import { AIService } from '../services/ai';
 import { saveScanCache } from './ask';
+import { saveReport } from './compare';
 import { ConfigLoader } from '../utils/config';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -399,6 +400,10 @@ async function scanAWS(options: ScanCommandOptions) {
     
     // Save scan cache for natural language queries
     saveScanCache(options.provider, options.region, report);
+    
+    // Save report for comparison tracking
+    const savedPath = saveReport(report);
+    info(`Report saved for comparison: ${path.basename(savedPath)}`);
     
     // Handle output format
     if (options.output === 'json') {

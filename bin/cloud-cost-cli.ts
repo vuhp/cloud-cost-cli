@@ -4,6 +4,7 @@ import { scanCommand } from '../src/commands/scan.js';
 import { askCommand } from '../src/commands/ask.js';
 import { configCommand } from '../src/commands/config.js';
 import { costsCommand } from '../src/commands/costs.js';
+import { compareCommand } from '../src/commands/compare.js';
 
 const program = new Command();
 
@@ -51,5 +52,13 @@ program
   .option('--days <N>', 'Number of days to include', '30')
   .option('--clear', 'Clear cost tracking data')
   .action(costsCommand);
+
+program
+  .command('compare')
+  .description('Compare two scan reports to track progress')
+  .option('--from <path>', 'Path to older scan report')
+  .option('--to <path>', 'Path to newer scan report')
+  .option('--output <format>', 'Output format: table, json', 'table')
+  .action(compareCommand);
 
 program.parse();
