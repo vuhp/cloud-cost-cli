@@ -17,6 +17,7 @@ program
   .description('Scan cloud account for cost savings')
   .option('--provider <aws|azure|gcp>', 'Cloud provider', 'aws')
   .option('--region <region>', 'Cloud region (e.g., us-east-1 for AWS, us-central1 for GCP)')
+  .option('--all-regions', 'Scan all AWS regions (AWS only)')
   .option('--profile <profile>', 'AWS profile name', 'default')
   .option('--subscription-id <id>', 'Azure subscription ID')
   .option('--location <location>', 'Azure location filter (e.g., eastus, westus2) - optional, scans all if omitted')
