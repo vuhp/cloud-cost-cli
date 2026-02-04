@@ -11,7 +11,7 @@ const program = new Command();
 program
   .name('cloud-cost-cli')
   .description('Optimize your cloud spend in seconds')
-  .version('0.6.4');
+  .version('0.6.5');
 
 program
   .command('scan')
