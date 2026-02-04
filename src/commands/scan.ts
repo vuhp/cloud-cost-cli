@@ -58,6 +58,7 @@ interface ScanCommandOptions {
   minSavings?: string;
   verbose?: boolean;
   accurate?: boolean;
+  detailedMetrics?: boolean;
   explain?: boolean;
   aiProvider?: string;
   aiModel?: string;
@@ -93,7 +94,7 @@ async function scanSingleRegionAWS(region: string, options: ScanCommandOptions):
   info(`Scanning region: ${region}...`);
 
   // Run analyzers in parallel
-  const ec2Promise = analyzeEC2Instances(client);
+  const ec2Promise = analyzeEC2Instances(client, options.detailedMetrics || false);
   const ebsPromise = analyzeEBSVolumes(client);
   const rdsPromise = analyzeRDSInstances(client);
   const s3Promise = analyzeS3Buckets(client);

@@ -11,7 +11,7 @@ const program = new Command();
 program
   .name('cloud-cost-cli')
   .description('Optimize your cloud spend in seconds')
-  .version('0.6.3');
+  .version('0.7.0');
 
 program
   .command('scan')
@@ -28,6 +28,7 @@ program
   .option('--days <N>', 'Analysis period in days', '30')
   .option('--min-savings <amount>', 'Filter by minimum savings ($/month)')
   .option('--accurate', 'Use real-time pricing from AWS (slower but more accurate)')
+  .option('--detailed-metrics', 'EC2: Analyze CPU + memory + network + disk I/O (slower, higher confidence)')
   .option('--explain', 'AI-powered explanations for top opportunities')
   .option('--ai-provider <openai|ollama>', 'AI provider (reads from config if not specified)')
   .option('--ai-model <model>', 'AI model (gpt-4o-mini for OpenAI, llama3.2:3b for Ollama)')
