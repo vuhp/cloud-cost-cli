@@ -79,11 +79,23 @@ export async function analyzeAzureVMs(
         // Check memory if available
         if (metrics.memoryAvailable !== undefined) {
           // Azure reports "Available Memory Bytes"
-          // If available memory is very low (< 500 MB), that means high usage
-          const availableMemoryGB = metrics.memoryAvailable / (1024 * 1024 * 1024);
-          if (availableMemoryGB < 0.5) {
-            confidence = 'low';
-            reasoning = 'High memory usage detected (low available memory)';
+          // Calculate usage percentage if we know the VM size
+          const totalMemoryGB = getVMMemoryGB(vmSize);
+          if (totalMemoryGB > 0) {
+            const availableGB = metrics.memoryAvailable / (1024 * 1024 * 1024);
+            const usedGB = totalMemoryGB - availableGB;
+            const usagePercent = (usedGB / totalMemoryGB) * 100;
+            if (usagePercent > 70) {
+              confidence = 'low';
+              reasoning = 'High memory usage detected';
+            }
+          } else {
+            // Fallback: If available memory is very low (< 500 MB), assume high usage
+            const availableMemoryGB = metrics.memoryAvailable / (1024 * 1024 * 1024);
+            if (availableMemoryGB < 0.5) {
+              confidence = 'low';
+              reasoning = 'High memory usage detected (low available memory)';
+            }
           }
         } else {
           reasoning += ' (memory data unavailable)';
@@ -312,8 +324,17 @@ function buildDetailedRecommendation(
   parts.push(`CPU: ${metrics.cpu.toFixed(1)}%`);
   
   if (metrics.memoryAvailable !== undefined) {
-    const memoryGB = (metrics.memoryAvailable / (1024 * 1024 * 1024)).toFixed(1);
-    parts.push(`Memory Available: ${memoryGB} GB`);
+    const totalMemoryGB = getVMMemoryGB(vmSize);
+    if (totalMemoryGB > 0) {
+      const availableGB = metrics.memoryAvailable / (1024 * 1024 * 1024);
+      const usedGB = totalMemoryGB - availableGB;
+      const usagePercent = (usedGB / totalMemoryGB) * 100;
+      parts.push(`Memory: ${usagePercent.toFixed(1)}%`);
+    } else {
+      // Fallback if VM size not recognized
+      const memoryGB = (metrics.memoryAvailable / (1024 * 1024 * 1024)).toFixed(1);
+      parts.push(`Memory Available: ${memoryGB} GB`);
+    }
   }
   
   if (metrics.networkIn !== undefined && metrics.networkOut !== undefined) {
@@ -333,6 +354,94 @@ function buildDetailedRecommendation(
   } else {
     return `Low utilization (${metricsSummary}) - consider downsizing to smaller VM size`;
   }
+}
+
+function getVMMemoryGB(vmSize: string): number {
+  // Common Azure VM sizes with their memory in GB
+  // Source: https://learn.microsoft.com/en-us/azure/virtual-machines/sizes
+  const memoryMap: Record<string, number> = {
+    // B-series (Burstable)
+    'Standard_B1s': 1,
+    'Standard_B1ms': 2,
+    'Standard_B2s': 4,
+    'Standard_B2ms': 8,
+    'Standard_B4ms': 16,
+    'Standard_B8ms': 32,
+    'Standard_B12ms': 48,
+    'Standard_B16ms': 64,
+    'Standard_B20ms': 80,
+    
+    // D-series v3 (General purpose)
+    'Standard_D2s_v3': 8,
+    'Standard_D4s_v3': 16,
+    'Standard_D8s_v3': 32,
+    'Standard_D16s_v3': 64,
+    'Standard_D32s_v3': 128,
+    'Standard_D48s_v3': 192,
+    'Standard_D64s_v3': 256,
+    
+    // D-series v4 (General purpose)
+    'Standard_D2s_v4': 8,
+    'Standard_D4s_v4': 16,
+    'Standard_D8s_v4': 32,
+    'Standard_D16s_v4': 64,
+    'Standard_D32s_v4': 128,
+    'Standard_D48s_v4': 192,
+    'Standard_D64s_v4': 256,
+    
+    // D-series v5 (General purpose)
+    'Standard_D2s_v5': 8,
+    'Standard_D4s_v5': 16,
+    'Standard_D8s_v5': 32,
+    'Standard_D16s_v5': 64,
+    'Standard_D32s_v5': 128,
+    'Standard_D48s_v5': 192,
+    'Standard_D64s_v5': 256,
+    'Standard_D96s_v5': 384,
+    
+    // E-series v3 (Memory optimized)
+    'Standard_E2s_v3': 16,
+    'Standard_E4s_v3': 32,
+    'Standard_E8s_v3': 64,
+    'Standard_E16s_v3': 128,
+    'Standard_E20s_v3': 160,
+    'Standard_E32s_v3': 256,
+    'Standard_E48s_v3': 384,
+    'Standard_E64s_v3': 432,
+    
+    // E-series v4 (Memory optimized)
+    'Standard_E2s_v4': 16,
+    'Standard_E4s_v4': 32,
+    'Standard_E8s_v4': 64,
+    'Standard_E16s_v4': 128,
+    'Standard_E20s_v4': 160,
+    'Standard_E32s_v4': 256,
+    'Standard_E48s_v4': 384,
+    'Standard_E64s_v4': 504,
+    
+    // E-series v5 (Memory optimized)
+    'Standard_E2s_v5': 16,
+    'Standard_E4s_v5': 32,
+    'Standard_E8s_v5': 64,
+    'Standard_E16s_v5': 128,
+    'Standard_E20s_v5': 160,
+    'Standard_E32s_v5': 256,
+    'Standard_E48s_v5': 384,
+    'Standard_E64s_v5': 512,
+    'Standard_E96s_v5': 672,
+    
+    // F-series v2 (Compute optimized)
+    'Standard_F2s_v2': 4,
+    'Standard_F4s_v2': 8,
+    'Standard_F8s_v2': 16,
+    'Standard_F16s_v2': 32,
+    'Standard_F32s_v2': 64,
+    'Standard_F48s_v2': 96,
+    'Standard_F64s_v2': 128,
+    'Standard_F72s_v2': 144,
+  };
+
+  return memoryMap[vmSize] || 0;
 }
 
 function getSmallerVMSize(currentSize: string): string | null {
