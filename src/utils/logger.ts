@@ -1,11 +1,11 @@
 import chalk from 'chalk';
 
 export function log(message: string) {
-  console.log(message);
+  console.error(message); // Use stderr to avoid mixing with JSON output
 }
 
 export function success(message: string) {
-  console.log(chalk.green('✓'), message);
+  console.error(chalk.green('✓'), message); // Use stderr
 }
 
 export function error(message: string) {
@@ -13,13 +13,13 @@ export function error(message: string) {
 }
 
 export function warn(message: string) {
-  console.warn(chalk.yellow('⚠'), message);
+  console.error(chalk.yellow('⚠'), message); // Use stderr (was console.warn)
 }
 
 export function info(message: string) {
-  console.log(chalk.blue('ℹ'), message);
+  console.error(chalk.blue('ℹ'), message); // Use stderr
 }
 
 export function progress(message: string) {
-  process.stdout.write(chalk.gray(message));
+  process.stderr.write(chalk.gray(message)); // Use stderr
 }
