@@ -78,11 +78,12 @@ export async function analyzeAzureVMs(
 
         // Check memory if available
         if (metrics.memoryAvailable !== undefined) {
-          // If memory usage is high (little available memory), don't recommend downsizing
-          const memoryUsagePercent = 100 - (metrics.memoryAvailable / (1024 * 1024 * 1024)); // rough estimate
-          if (memoryUsagePercent > 70) {
+          // Azure reports "Available Memory Bytes"
+          // If available memory is very low (< 500 MB), that means high usage
+          const availableMemoryGB = metrics.memoryAvailable / (1024 * 1024 * 1024);
+          if (availableMemoryGB < 0.5) {
             confidence = 'low';
-            reasoning = 'High memory usage detected';
+            reasoning = 'High memory usage detected (low available memory)';
           }
         } else {
           reasoning += ' (memory data unavailable)';
