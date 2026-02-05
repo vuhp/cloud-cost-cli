@@ -509,7 +509,7 @@ async function scanAzure(options: ScanCommandOptions) {
 
   // Run analyzers in parallel
   info('Analyzing Virtual Machines...');
-  const vmPromise = analyzeAzureVMs(client);
+  const vmPromise = analyzeAzureVMs(client, options.detailedMetrics || false);
 
   info('Analyzing Managed Disks...');
   const diskPromise = analyzeAzureDisks(client);
@@ -724,7 +724,7 @@ async function scanGCP(options: ScanCommandOptions) {
 
   // Run analyzers in parallel
   info('Analyzing Compute Engine instances...');
-  const gcePromise = analyzeGCEInstances(client);
+  const gcePromise = analyzeGCEInstances(client, options.detailedMetrics || false);
 
   info('Analyzing Cloud Storage buckets...');
   const gcsPromise = analyzeGCSBuckets(client);
