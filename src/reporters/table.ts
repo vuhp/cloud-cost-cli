@@ -37,8 +37,8 @@ export async function renderTable(
   );
 
   const table = new Table({
-    head: ['#', 'Type', 'Resource ID', 'Recommendation', 'Savings/mo'],
-    colWidths: [5, 12, 40, 60, 15],
+    head: ['#', 'Type', 'Resource ID', 'Recommendation', 'Confidence', 'Savings/mo'],
+    colWidths: [5, 12, 40, 50, 12, 15],
     wordWrap: true,
     style: {
       head: ['cyan'],
@@ -46,11 +46,17 @@ export async function renderTable(
   });
 
   opportunities.forEach((opp: SavingsOpportunity, index: number) => {
+    const confidenceColor = 
+      opp.confidence === 'high' ? chalk.green :
+      opp.confidence === 'medium' ? chalk.yellow :
+      chalk.red;
+    
     table.push([
       (index + 1).toString(),
       opp.resourceType.toUpperCase(),
       opp.resourceId,
       opp.recommendation,
+      confidenceColor(opp.confidence.toUpperCase()),
       chalk.green(formatCurrency(opp.estimatedSavings)),
     ]);
   });

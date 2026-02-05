@@ -326,6 +326,47 @@ function getInlineStyles(theme: 'light' | 'dark'): string {
       color: white;
     }
     
+    /* Confidence badges */
+    .confidence-high {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: #10b981;
+      color: white;
+    }
+    
+    .confidence-medium {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: #f59e0b;
+      color: white;
+    }
+    
+    .confidence-low {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: #ef4444;
+      color: white;
+    }
+    
+    .confidence-cell {
+      text-align: center;
+    }
+    
     .resource-id {
       font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
       font-size: 0.85rem;
@@ -503,6 +544,9 @@ function renderChartsSection(
 function renderOpportunitiesTable(opportunities: SavingsOpportunity[]): string {
   const rows = opportunities
     .map((opp, index) => {
+      const confidenceClass = `confidence-${opp.confidence}`;
+      const confidenceBadge = `<span class="${confidenceClass}">${opp.confidence.toUpperCase()}</span>`;
+      
       return `
       <tr>
         <td>${index + 1}</td>
@@ -510,6 +554,7 @@ function renderOpportunitiesTable(opportunities: SavingsOpportunity[]): string {
         <td>${opp.resourceType}</td>
         <td class="resource-id">${escapeHtml(opp.resourceId)}</td>
         <td class="recommendation">${escapeHtml(opp.recommendation)}</td>
+        <td class="confidence-cell">${confidenceBadge}</td>
         <td class="savings">$${opp.estimatedSavings.toFixed(2)}</td>
       </tr>
     `;
@@ -526,6 +571,7 @@ function renderOpportunitiesTable(opportunities: SavingsOpportunity[]): string {
           <option value="savings-asc">Sort by: Savings (Low to High)</option>
           <option value="service">Sort by: Service</option>
           <option value="provider">Sort by: Provider</option>
+          <option value="confidence">Sort by: Confidence</option>
         </select>
       </div>
       <div class="table-wrapper">
@@ -537,6 +583,7 @@ function renderOpportunitiesTable(opportunities: SavingsOpportunity[]): string {
               <th data-sort="service">Service <span class="sort-indicator"></span></th>
               <th data-sort="resource">Resource ID <span class="sort-indicator"></span></th>
               <th data-sort="recommendation">Recommendation <span class="sort-indicator"></span></th>
+              <th data-sort="confidence">Confidence <span class="sort-indicator"></span></th>
               <th data-sort="savings">Savings/mo <span class="sort-indicator"></span></th>
             </tr>
           </thead>
