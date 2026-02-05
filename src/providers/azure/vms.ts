@@ -4,8 +4,18 @@ import { MonitorClient } from '@azure/arm-monitor';
 import dayjs from 'dayjs';
 import { getAzureVMMonthlyCost } from '../../analyzers/cost-estimator';
 
+interface AzureVMMetrics {
+  cpu: number;
+  memoryAvailable?: number; // bytes
+  networkIn?: number; // bytes
+  networkOut?: number; // bytes
+  diskReadOps?: number;
+  diskWriteOps?: number;
+}
+
 export async function analyzeAzureVMs(
-  client: AzureClient
+  client: AzureClient,
+  detailedMetrics: boolean = false
 ): Promise<SavingsOpportunity[]> {
   const computeClient = client.getComputeClient();
   const monitorClient = client.getMonitorClient();
@@ -33,11 +43,62 @@ export async function analyzeAzureVMs(
 
       const currentCost = getAzureVMMonthlyCost(vmSize);
 
-      // Get CPU metrics for the last 7 days
-      const avgCpu = await getAverageCPU(monitorClient, vm.id, 7);
+      // Get metrics based on mode
+      const metrics = detailedMetrics
+        ? await getDetailedMetrics(monitorClient, vm.id, 7)
+        : await getBasicMetrics(monitorClient, vm.id, 7);
+
+      // Determine if VM is idle/underutilized
+      const isIdle = metrics.cpu < 5;
+      const isUnderutilized = metrics.cpu < 20;
+
+      // Calculate confidence based on available metrics
+      let confidence: 'high' | 'medium' | 'low' = 'low';
+      let reasoning = '';
+
+      if (detailedMetrics) {
+        const metricsLow = [
+          metrics.cpu < 20,
+          metrics.networkIn !== undefined && metrics.networkIn < 1000000, // < 1MB/s
+          metrics.networkOut !== undefined && metrics.networkOut < 1000000,
+          metrics.diskReadOps !== undefined && metrics.diskReadOps < 100,
+          metrics.diskWriteOps !== undefined && metrics.diskWriteOps < 100,
+        ].filter(Boolean).length;
+
+        if (metricsLow >= 4) {
+          confidence = 'high';
+          reasoning = 'All metrics low';
+        } else if (metricsLow >= 2) {
+          confidence = 'medium';
+          reasoning = 'Multiple metrics low';
+        } else {
+          confidence = 'low';
+          reasoning = 'Mixed metric signals';
+        }
+
+        // Check memory if available
+        if (metrics.memoryAvailable !== undefined) {
+          // If memory usage is high (little available memory), don't recommend downsizing
+          const memoryUsagePercent = 100 - (metrics.memoryAvailable / (1024 * 1024 * 1024)); // rough estimate
+          if (memoryUsagePercent > 70) {
+            confidence = 'low';
+            reasoning = 'High memory usage detected';
+          }
+        } else {
+          reasoning += ' (memory data unavailable)';
+        }
+      } else {
+        confidence = 'low';
+        reasoning = 'CPU only - verify memory/disk before downsizing';
+      }
 
       // Opportunity 1: Idle VM (low CPU usage)
-      if (avgCpu < 5) {
+      if (isIdle) {
+        let recommendation = `VM is idle (${metrics.cpu.toFixed(1)}% avg CPU). Consider stopping or downsizing.`;
+        if (detailedMetrics) {
+          recommendation = buildDetailedRecommendation(metrics, vmSize, true);
+        }
+
         opportunities.push({
           id: `azure-vm-idle-${vm.name}`,
           provider: 'azure',
@@ -46,26 +107,29 @@ export async function analyzeAzureVMs(
           resourceName: vm.name,
           category: 'idle',
           currentCost,
-          estimatedSavings: currentCost * 0.9, // Could stop or downsize
-          confidence: 'high',
-          recommendation: `VM is idle (${avgCpu.toFixed(1)}% avg CPU). Consider stopping or downsizing.`,
+          estimatedSavings: currentCost * 0.9,
+          confidence,
+          recommendation,
           metadata: {
             vmSize,
-            avgCpu,
+            metrics,
+            reasoning,
             location: vm.location,
             powerState,
           },
           detectedAt: new Date(),
         });
       }
-      // Opportunity 2: Underutilized VM (medium CPU usage)
-      else if (avgCpu < 20) {
+      // Opportunity 2: Underutilized VM (only if detailed metrics and high confidence)
+      else if (isUnderutilized && detailedMetrics && confidence === 'high') {
         const smallerSize = getSmallerVMSize(vmSize);
         if (smallerSize) {
           const newCost = getAzureVMMonthlyCost(smallerSize);
           const savings = currentCost - newCost;
 
-          if (savings > 10) { // At least $10/month savings
+          if (savings > 10) {
+            const recommendation = buildDetailedRecommendation(metrics, vmSize, false);
+
             opportunities.push({
               id: `azure-vm-underutilized-${vm.name}`,
               provider: 'azure',
@@ -75,12 +139,13 @@ export async function analyzeAzureVMs(
               category: 'oversized',
               currentCost,
               estimatedSavings: savings,
-              confidence: 'medium',
-              recommendation: `Downsize from ${vmSize} to ${smallerSize} (${avgCpu.toFixed(1)}% avg CPU).`,
+              confidence,
+              recommendation,
               metadata: {
                 vmSize,
                 suggestedSize: smallerSize,
-                avgCpu,
+                metrics,
+                reasoning,
                 location: vm.location,
               },
               detectedAt: new Date(),
@@ -94,6 +159,87 @@ export async function analyzeAzureVMs(
   } catch (error) {
     console.error('Error analyzing Azure VMs:', error);
     return opportunities;
+  }
+}
+
+// Basic metrics: CPU only (fast)
+async function getBasicMetrics(
+  monitorClient: MonitorClient,
+  resourceId: string,
+  days: number
+): Promise<AzureVMMetrics> {
+  const cpu = await getAverageCPU(monitorClient, resourceId, days);
+  return { cpu };
+}
+
+// Detailed metrics: CPU + Memory + Network + Disk (comprehensive)
+async function getDetailedMetrics(
+  monitorClient: MonitorClient,
+  resourceId: string,
+  days: number
+): Promise<AzureVMMetrics> {
+  try {
+    const endTime = new Date();
+    const startTime = dayjs().subtract(days, 'days').toDate();
+    const timespan = `${startTime.toISOString()}/${endTime.toISOString()}`;
+
+    // Fetch multiple metrics in one call
+    const metricNames = [
+      'Percentage CPU',
+      'Available Memory Bytes',
+      'Network In Total',
+      'Network Out Total',
+      'Disk Read Operations/Sec',
+      'Disk Write Operations/Sec',
+    ].join(',');
+
+    const metricsResponse = await monitorClient.metrics.list(resourceId, {
+      timespan,
+      interval: 'PT1H',
+      metricnames: metricNames,
+      aggregation: 'Average',
+    });
+
+    const metrics: AzureVMMetrics = { cpu: 0 };
+
+    for (const metric of metricsResponse.value || []) {
+      const timeseries = metric.timeseries?.[0]?.data || [];
+      const values = timeseries
+        .map((d: any) => d.average)
+        .filter((v: any) => v !== null && v !== undefined);
+
+      if (values.length === 0) continue;
+
+      const avg = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+
+      switch (metric.name?.value) {
+        case 'Percentage CPU':
+          metrics.cpu = avg;
+          break;
+        case 'Available Memory Bytes':
+          metrics.memoryAvailable = avg;
+          break;
+        case 'Network In Total':
+          metrics.networkIn = avg;
+          break;
+        case 'Network Out Total':
+          metrics.networkOut = avg;
+          break;
+        case 'Disk Read Operations/Sec':
+          metrics.diskReadOps = avg;
+          break;
+        case 'Disk Write Operations/Sec':
+          metrics.diskWriteOps = avg;
+          break;
+      }
+    }
+
+    return metrics;
+  } catch (error) {
+    console.error('Error fetching detailed metrics:', error);
+    // Fallback to basic metrics
+    const cpu = await getAverageCPU(monitorClient, resourceId, days);
+    return { cpu };
   }
 }
 
@@ -152,6 +298,39 @@ async function getAverageCPU(
   } catch (error) {
     console.error('Error fetching CPU metrics:', error);
     return 0;
+  }
+}
+
+function buildDetailedRecommendation(
+  metrics: AzureVMMetrics,
+  vmSize: string,
+  isIdle: boolean
+): string {
+  const parts = [];
+  
+  parts.push(`CPU: ${metrics.cpu.toFixed(1)}%`);
+  
+  if (metrics.memoryAvailable !== undefined) {
+    const memoryGB = (metrics.memoryAvailable / (1024 * 1024 * 1024)).toFixed(1);
+    parts.push(`Memory Available: ${memoryGB} GB`);
+  }
+  
+  if (metrics.networkIn !== undefined && metrics.networkOut !== undefined) {
+    const totalMB = ((metrics.networkIn + metrics.networkOut) / 1024 / 1024).toFixed(1);
+    parts.push(`Network: ${totalMB} MB/s`);
+  }
+  
+  if (metrics.diskReadOps !== undefined && metrics.diskWriteOps !== undefined) {
+    const totalIOPS = (metrics.diskReadOps + metrics.diskWriteOps).toFixed(0);
+    parts.push(`Disk: ${totalIOPS} IOPS`);
+  }
+
+  const metricsSummary = parts.join(' | ');
+  
+  if (isIdle) {
+    return `VM is idle (${metricsSummary}) - consider stopping or terminating`;
+  } else {
+    return `Low utilization (${metricsSummary}) - consider downsizing to smaller VM size`;
   }
 }
 

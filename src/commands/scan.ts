@@ -58,6 +58,7 @@ interface ScanCommandOptions {
   minSavings?: string;
   verbose?: boolean;
   accurate?: boolean;
+  detailedMetrics?: boolean;
   explain?: boolean;
   aiProvider?: string;
   aiModel?: string;
@@ -93,7 +94,7 @@ async function scanSingleRegionAWS(region: string, options: ScanCommandOptions):
   info(`Scanning region: ${region}...`);
 
   // Run analyzers in parallel
-  const ec2Promise = analyzeEC2Instances(client);
+  const ec2Promise = analyzeEC2Instances(client, options.detailedMetrics || false);
   const ebsPromise = analyzeEBSVolumes(client);
   const rdsPromise = analyzeRDSInstances(client);
   const s3Promise = analyzeS3Buckets(client);
@@ -508,7 +509,7 @@ async function scanAzure(options: ScanCommandOptions) {
 
   // Run analyzers in parallel
   info('Analyzing Virtual Machines...');
-  const vmPromise = analyzeAzureVMs(client);
+  const vmPromise = analyzeAzureVMs(client, options.detailedMetrics || false);
 
   info('Analyzing Managed Disks...');
   const diskPromise = analyzeAzureDisks(client);
@@ -723,7 +724,7 @@ async function scanGCP(options: ScanCommandOptions) {
 
   // Run analyzers in parallel
   info('Analyzing Compute Engine instances...');
-  const gcePromise = analyzeGCEInstances(client);
+  const gcePromise = analyzeGCEInstances(client, options.detailedMetrics || false);
 
   info('Analyzing Cloud Storage buckets...');
   const gcsPromise = analyzeGCSBuckets(client);
