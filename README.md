@@ -9,6 +9,7 @@ A command-line tool that analyzes your AWS, Azure, and GCP resources to identify
 
 **✨ NEW:** Multi-region scanning — Scan all AWS regions at once!  
 **✨ NEW:** Comparison mode — Track your cost optimization progress over time!  
+**✨ v0.7.0:** Multi-metric analysis — Comprehensive resource utilization (CPU, memory, network, disk) with confidence scoring!  
 **✨ v0.6.2:** HTML export — Beautiful, interactive reports that auto-open in your browser!  
 **✨ v0.6.0:** 11 additional analyzers — Lambda, DynamoDB, ElastiCache, CosmosDB, and more!
 
@@ -16,6 +17,7 @@ A command-line tool that analyzes your AWS, Azure, and GCP resources to identify
 
 ## Features
 
+- **Multi-metric analysis** — CPU + memory + network + disk for high-confidence recommendations (AWS, Azure, GCP)
 - **Multi-cloud support** - AWS (15 analyzers), Azure (8 analyzers), GCP (5 analyzers)
 - **Multi-region scanning** — Find resources in all AWS regions at once
 - **Comparison mode** — Track optimization progress over time
@@ -130,6 +132,36 @@ cloud-cost-cli scan && cloud-cost-cli compare
 
 ## Usage
 
+### Multi-Metric Analysis (High Confidence)
+```bash
+# Default: Fast scan with CPU-only analysis
+cloud-cost-cli scan --provider aws --region us-east-1
+
+# Detailed: Multi-metric analysis (CPU + memory + network + disk)
+cloud-cost-cli scan --provider aws --region us-east-1 --detailed-metrics
+cloud-cost-cli scan --provider azure --location eastus --detailed-metrics
+cloud-cost-cli scan --provider gcp --region us-central1 --detailed-metrics
+```
+
+**Confidence levels:**
+- 🟢 **HIGH** — All metrics low, safe to downsize immediately
+- 🟡 **MEDIUM** — Multiple metrics low, review recommended
+- 🔴 **LOW** — CPU-only or mixed signals, manual verification needed
+
+**Example output:**
+```
+# | Type | Resource ID  | Recommendation                           | Confidence | Savings/mo
+1 | EC2  | i-abc123     | Low utilization (CPU: 8% | Memory: 15% | HIGH       | $85.00
+  |      |              | Network: 0.5 MB/s | Disk: 20 IOPS)   |            |
+```
+
+**When to use `--detailed-metrics`:**
+- Production environments (higher confidence needed)
+- Before making right-sizing decisions
+- When accuracy matters more than speed
+
+**Performance:** Adds ~15-30 seconds per 100 resources (negligible API cost)
+
 ### AI Explanations
 ```bash
 # OpenAI
@@ -164,22 +196,31 @@ cloud-cost-cli scan --provider aws --min-savings 50   # Only > $50/month
 ## Example Findings
 
 ```bash
+💰 EC2 instance: i-0abc123def456
+   CPU: 8% | Memory: 15% | Network: 0.5 MB/s | Disk: 20 IOPS
+   Recommendation: Low utilization - consider downsizing to t3.medium
+   Confidence: HIGH (all metrics low)
+   Savings: $85/month
+
 💰 Lambda function: api-handler-legacy
    Last invocation: 62 days ago
    Recommendation: Delete unused function
+   Confidence: HIGH
    Savings: $18.50/month
 
-💰 ElastiCache cluster: dev-redis
-   CPU: 3%, Connections: 2 avg
-   Recommendation: Downsize or delete
-   Savings: $85/month
+💰 Azure VM: production-api-server
+   CPU: 12% | Memory: 25% | Network: 1.2 MB/s | Disk: 45 IOPS
+   Recommendation: Low utilization - consider downsizing
+   Confidence: HIGH (all metrics low)
+   Savings: $120/month
 
 💰 CosmosDB account: customer-db
    Provisioned: 10,000 RU/s | Usage: ~500 RU/s
    Recommendation: Reduce to 1,000 RU/s
+   Confidence: HIGH
    Savings: $520/month
 
-Total: $970/month = $11,640/year
+Total: $743.50/month = $8,922/year
 ```
 
 ---
@@ -214,6 +255,17 @@ AWS: ReadOnlyAccess. Azure: Reader. GCP: Compute/Storage/SQL Viewer.
 
 **How accurate are savings estimates?**  
 Based on standard pay-as-you-go pricing. Estimates are directional (±20%) to help prioritize.
+
+**What's the difference between default and --detailed-metrics mode?**  
+- **Default:** Fast scan using CPU utilization only (LOW confidence)
+- **--detailed-metrics:** Comprehensive analysis using CPU + memory + network + disk (HIGH confidence when all metrics are low)
+- Use detailed mode before making production changes
+
+**Does --detailed-metrics require CloudWatch/monitoring agents?**  
+- **AWS:** CloudWatch agent needed for memory metrics (CPU/network/disk work without it)
+- **Azure:** Memory available by default (no agent needed)
+- **GCP:** Monitoring agent needed for memory metrics (CPU/network/disk work without it)
+- Tool gracefully degrades if data unavailable
 
 **Is my data sent to OpenAI?**  
 Only if you use `--explain` with OpenAI. Use `--ai-provider ollama` for 100% local analysis.
