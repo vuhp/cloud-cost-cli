@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [trends, setTrends] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -40,11 +41,13 @@ export default function Dashboard() {
       if (data.type === 'scan_completed') {
         loadData();
         setScanning(false);
+        setError(null);
       } else if (data.type === 'scan_started') {
         setScanning(true);
+        setError(null);
       } else if (data.type === 'scan_failed') {
         setScanning(false);
-        alert(`Scan failed: ${data.error || 'Unknown error'}`);
+        setError(data.error || 'Scan failed. Please check your credentials and try again.');
       }
     });
 
@@ -69,12 +72,13 @@ export default function Dashboard() {
   async function handleScan(provider: string) {
     try {
       setScanning(true);
+      setError(null);
       // Use latest credentials for this provider (backend will handle it)
       await api.triggerScan(provider);
     } catch (error: any) {
       console.error('Failed to trigger scan:', error);
-      alert(error.message || 'Failed to start scan. Make sure credentials are configured in Settings.');
       setScanning(false);
+      setError(error.message || 'Failed to start scan. Please check Settings and try again.');
     }
   }
 
@@ -150,6 +154,27 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
         <p className="text-slate-400">Cloud cost optimization overview</p>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="mb-6 bg-red-900/30 border border-red-700 rounded-lg p-4 flex items-start gap-3">
+          <svg className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="flex-1">
+            <h3 className="text-red-300 font-semibold mb-1">Scan Failed</h3>
+            <p className="text-red-200 text-sm">{error}</p>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-400 hover:text-red-300 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
