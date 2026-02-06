@@ -249,7 +249,7 @@ export default function Dashboard() {
       {/* Trend Chart */}
       {trends.length > 0 && (
         <div className="bg-slate-800 rounded-lg p-6 border border-slate-700 mb-8">
-          <h2 className="text-xl font-semibold text-white mb-4">Savings Over Time</h2>
+          <h2 className="text-xl font-semibold text-white mb-4">Potential Waste Over Time</h2>
           <div className="h-80">
             <Line data={chartData} options={chartOptions} />
           </div>
