@@ -131,7 +131,24 @@ export async function runScan(
     };
   } catch (error: any) {
     console.error(`Scan ${scanId} failed:`, error);
-    throw error;
+    
+    // Improve error messages for common issues
+    let errorMessage = error.message;
+    
+    if (errorMessage.includes('Compute Engine API has not been used') || 
+        errorMessage.includes('API has not been enabled')) {
+      errorMessage = `API not enabled: ${errorMessage}. Please enable the required APIs in your GCP project.`;
+    } else if (errorMessage.includes('CredentialsError') || 
+               errorMessage.includes('authentication') || 
+               errorMessage.includes('credentials')) {
+      errorMessage = `Authentication failed: ${errorMessage}. Please check your credentials in Settings.`;
+    } else if (errorMessage.includes('permission') || 
+               errorMessage.includes('access denied') || 
+               errorMessage.includes('forbidden')) {
+      errorMessage = `Permission denied: ${errorMessage}. Please ensure your account has the necessary permissions.`;
+    }
+    
+    throw new Error(errorMessage);
   }
 }
 

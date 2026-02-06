@@ -42,6 +42,9 @@ export default function Dashboard() {
         setScanning(false);
       } else if (data.type === 'scan_started') {
         setScanning(true);
+      } else if (data.type === 'scan_failed') {
+        setScanning(false);
+        alert(`Scan failed: ${data.error || 'Unknown error'}`);
       }
     });
 
