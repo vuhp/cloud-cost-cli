@@ -131,6 +131,8 @@ app.post('/api/scans', async (req: Request, res: Response) => {
 
     // Get credentials if credentialsId provided, or use latest for provider
     let credentials: Record<string, string> | undefined;
+    let actualCredentialsId: number | undefined = credentialsId;
+    
     if (credentialsId) {
       const creds = getCredentials(credentialsId);
       if (!creds) {
@@ -143,6 +145,7 @@ app.post('/api/scans', async (req: Request, res: Response) => {
       const creds = getCredentialsByProvider(provider);
       if (creds) {
         credentials = creds.credentials;
+        actualCredentialsId = creds.id;
       }
     }
 
@@ -151,7 +154,7 @@ app.post('/api/scans', async (req: Request, res: Response) => {
     if (provider === 'aws' && credentials?.accessKeyId) {
       // For AWS, we can't easily get account ID from access key without an API call
       // We'll store the credential ID instead
-      accountId = credentialsId?.toString();
+      accountId = actualCredentialsId?.toString();
     } else if (provider === 'azure' && credentials?.subscriptionId) {
       accountId = credentials.subscriptionId;
     } else if (provider === 'gcp' && credentials?.projectId) {
