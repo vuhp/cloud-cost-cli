@@ -147,7 +147,18 @@ app.post('/api/scans', async (req: Request, res: Response) => {
     }
 
     // Create scan record
-    const scanId = saveScan({ provider, region });
+    let accountId: string | undefined;
+    if (provider === 'aws' && credentials?.accessKeyId) {
+      // For AWS, we can't easily get account ID from access key without an API call
+      // We'll store the credential ID instead
+      accountId = credentialsId?.toString();
+    } else if (provider === 'azure' && credentials?.subscriptionId) {
+      accountId = credentials.subscriptionId;
+    } else if (provider === 'gcp' && credentials?.projectId) {
+      accountId = credentials.projectId;
+    }
+
+    const scanId = saveScan({ provider, region, accountId });
 
     // Broadcast scan started
     broadcast({ type: 'scan_started', scanId, provider, region });

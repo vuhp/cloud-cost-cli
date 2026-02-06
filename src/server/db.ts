@@ -76,7 +76,7 @@ export function initializeSchema() {
 export function saveScan(data: {
   provider: string;
   region?: string;
-  accountId?: number;
+  accountId?: string;
 }): number {
   const stmt = db.prepare(`
     INSERT INTO scans (provider, region, account_id, status)
