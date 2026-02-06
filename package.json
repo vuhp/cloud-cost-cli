@@ -8,7 +8,10 @@
   },
   "scripts": {
     "dev": "tsx bin/cloud-cost-cli.ts",
-    "build": "tsc",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "tsc",
+    "build:frontend": "cd dashboard && npm install && npm run build",
+    "prepublishOnly": "npm run build",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
@@ -41,6 +44,7 @@
   "homepage": "https://github.com/vuhp/cloud-cost-cli#readme",
   "files": [
     "dist",
+    "dashboard/dist",
     "README.md",
     "LICENSE",
     "docs"
