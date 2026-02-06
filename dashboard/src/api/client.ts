@@ -61,25 +61,37 @@ export interface SaveCredentialsRequest {
 export const api = {
   async getStats(): Promise<Stats> {
     const res = await fetch(`${API_BASE}/stats`);
-    if (!res.ok) throw new Error('Failed to fetch stats');
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Failed to fetch stats' }));
+      throw new Error(error.error || 'Failed to fetch stats');
+    }
     return res.json();
   },
 
   async getTrends(days: number = 30): Promise<TrendData[]> {
     const res = await fetch(`${API_BASE}/trends?days=${days}`);
-    if (!res.ok) throw new Error('Failed to fetch trends');
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Failed to fetch trends' }));
+      throw new Error(error.error || 'Failed to fetch trends');
+    }
     return res.json();
   },
 
   async getScans(limit: number = 30): Promise<Scan[]> {
     const res = await fetch(`${API_BASE}/scans?limit=${limit}`);
-    if (!res.ok) throw new Error('Failed to fetch scans');
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Failed to fetch scans' }));
+      throw new Error(error.error || 'Failed to fetch scans');
+    }
     return res.json();
   },
 
   async getScan(id: number): Promise<ScanDetail> {
     const res = await fetch(`${API_BASE}/scans/${id}`);
-    if (!res.ok) throw new Error('Failed to fetch scan');
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Failed to fetch scan' }));
+      throw new Error(error.error || 'Failed to fetch scan');
+    }
     return res.json();
   },
 
@@ -89,13 +101,19 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ provider, credentialsId, region }),
     });
-    if (!res.ok) throw new Error('Failed to trigger scan');
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Failed to trigger scan' }));
+      throw new Error(error.error || 'Failed to trigger scan');
+    }
     return res.json();
   },
 
   async getCredentials(): Promise<CloudCredential[]> {
     const res = await fetch(`${API_BASE}/credentials`);
-    if (!res.ok) throw new Error('Failed to fetch credentials');
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Failed to fetch credentials' }));
+      throw new Error(error.error || 'Failed to fetch credentials');
+    }
     return res.json();
   },
 
@@ -105,7 +123,10 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to save credentials');
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Failed to save credentials' }));
+      throw new Error(error.error || 'Failed to save credentials');
+    }
     return res.json();
   },
 
@@ -113,7 +134,10 @@ export const api = {
     const res = await fetch(`${API_BASE}/credentials/${id}`, {
       method: 'DELETE',
     });
-    if (!res.ok) throw new Error('Failed to delete credentials');
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Failed to delete credentials' }));
+      throw new Error(error.error || 'Failed to delete credentials');
+    }
   },
 
   connectWebSocket(onMessage: (data: any) => void): WebSocket {
