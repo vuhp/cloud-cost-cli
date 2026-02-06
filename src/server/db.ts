@@ -206,10 +206,20 @@ export function getTrendData(days: number = 30) {
       DATE(started_at) as date,
       SUM(total_savings) as savings,
       COUNT(*) as scan_count
-    FROM scans
-    WHERE status = 'completed'
-      AND started_at >= datetime('now', '-' || ? || ' days')
-    GROUP BY DATE(started_at)
+    FROM (
+      SELECT 
+        provider, 
+        region, 
+        DATE(started_at) as date,
+        total_savings,
+        started_at
+      FROM scans
+      WHERE status = 'completed'
+        AND started_at >= datetime('now', '-' || ? || ' days')
+      GROUP BY provider, region, DATE(started_at)
+      HAVING started_at = MAX(started_at)
+    )
+    GROUP BY date
     ORDER BY date ASC
   `);
   
