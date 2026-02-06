@@ -55,6 +55,9 @@ export async function runScan(
     const scanAllRegions = !region || region === '';
 
     if (provider === 'aws') {
+      // Get AWS account ID from first client
+      let awsAccountId: string | undefined;
+      
       if (scanAllRegions) {
         // Scan all AWS regions
         console.error('[AWS] Scanning all enabled regions...');
@@ -72,6 +75,14 @@ export async function runScan(
               };
             }
             const client = new AWSClient(clientConfig);
+
+            // Get account ID from first region
+            if (!awsAccountId) {
+              awsAccountId = await client.getAccountId();
+              // Update scan with real account ID
+              const { updateScanAccountId } = await import('./db.js');
+              updateScanAccountId(scanId, awsAccountId);
+            }
 
             const results = await Promise.all([
               analyzeEC2Instances(client, detailedMetrics),
@@ -108,6 +119,11 @@ export async function runScan(
           };
         }
         const client = new AWSClient(clientConfig);
+
+        // Get and update account ID
+        const awsAccountId = await client.getAccountId();
+        const { updateScanAccountId } = await import('./db.js');
+        updateScanAccountId(scanId, awsAccountId);
 
         const results = await Promise.all([
           analyzeEC2Instances(client, detailedMetrics),

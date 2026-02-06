@@ -11,6 +11,7 @@ import { ElastiCacheClient } from '@aws-sdk/client-elasticache';
 import { ECSClient } from '@aws-sdk/client-ecs';
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront';
 import { APIGatewayClient } from '@aws-sdk/client-api-gateway';
+import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts';
 import { fromIni, fromEnv } from '@aws-sdk/credential-providers';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -35,6 +36,7 @@ export class AWSClient {
   private ecs: ECSClient;
   private cloudfront: CloudFrontClient;
   private apigateway: APIGatewayClient;
+  private sts: STSClient;
   public region: string;
   public profile: string;
 
@@ -62,6 +64,18 @@ export class AWSClient {
     this.ecs = new ECSClient({ region: this.region, credentials });
     this.cloudfront = new CloudFrontClient({ region: 'us-east-1', credentials });
     this.apigateway = new APIGatewayClient({ region: this.region, credentials });
+    this.sts = new STSClient({ region: this.region, credentials });
+  }
+
+  async getAccountId(): Promise<string> {
+    try {
+      const command = new GetCallerIdentityCommand({});
+      const response = await this.sts.send(command);
+      return response.Account || 'unknown';
+    } catch (error) {
+      console.error('Failed to get AWS account ID:', error);
+      return 'unknown';
+    }
   }
 
   private getProfileRegion(profileName: string): string | null {

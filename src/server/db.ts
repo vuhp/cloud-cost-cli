@@ -114,6 +114,11 @@ export function updateScanStatus(
   );
 }
 
+export function updateScanAccountId(scanId: number, accountId: string) {
+  const stmt = db.prepare('UPDATE scans SET account_id = ? WHERE id = ?');
+  stmt.run(accountId, scanId);
+}
+
 export function saveOpportunities(scanId: number, opportunities: any[]) {
   const stmt = db.prepare(`
     INSERT INTO opportunities (
