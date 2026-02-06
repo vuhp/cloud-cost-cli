@@ -7,11 +7,9 @@
 
 A powerful CLI and web dashboard for analyzing AWS, Azure, and GCP resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
-**✨ NEW:** Web Dashboard — Interactive UI with secure credential storage and real-time scans!  
-**✨ NEW:** Multi-region scanning for all clouds — Scan AWS, Azure, and GCP regions at once!  
-**✨ v0.7.0:** Multi-metric analysis — Comprehensive resource utilization (CPU, memory, network, disk) with confidence scoring!  
-**✨ v0.6.2:** HTML export — Beautiful, interactive reports that auto-open in your browser!  
-**✨ v0.6.0:** 11 additional analyzers — Lambda, DynamoDB, ElastiCache, CosmosDB, and more!
+**✨ v0.8.0:** Web Dashboard — Interactive UI with secure credential storage and real-time scans!  
+**✨ v0.8.0:** Multi-region scanning for all clouds — Scan AWS, Azure, and GCP regions at once!  
+**✨ v0.7.0:** Multi-metric analysis — Comprehensive resource utilization (CPU, memory, network, disk) with confidence scoring!
 
 ---
 
@@ -19,7 +17,7 @@ A powerful CLI and web dashboard for analyzing AWS, Azure, and GCP resources to 
 
 - **🖥️ Web Dashboard** — Interactive UI with credential management, real-time scans, and trend charts
 - **Multi-metric analysis** — CPU + memory + network + disk for high-confidence recommendations (AWS, Azure, GCP)
-- **Multi-cloud support** - AWS (15 analyzers), Azure (8 analyzers), GCP (5 analyzers)
+- **Multi-cloud support** - AWS (15 analyzers), Azure (9 analyzers), GCP (7 analyzers)
 - **Multi-region scanning** — Find resources in all regions at once (AWS, Azure, GCP)
 - **Comparison mode** — Track optimization progress over time
 - **AI-powered explanations** — Human-readable recommendations (OpenAI or local Ollama)
@@ -213,7 +211,7 @@ cloud-cost-cli dashboard
 
 ### CLI Usage
 
-### Multi-Metric Analysis (High Confidence)
+#### Multi-Metric Analysis (High Confidence)
 ```bash
 # Default: Fast scan with CPU-only analysis
 cloud-cost-cli scan --provider aws --region us-east-1
