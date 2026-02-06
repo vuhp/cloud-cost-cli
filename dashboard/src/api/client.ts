@@ -4,6 +4,7 @@ export interface Scan {
   id: number;
   provider: string;
   region?: string;
+  account_id?: string;
   status: 'running' | 'completed' | 'failed';
   started_at: string;
   completed_at?: string;

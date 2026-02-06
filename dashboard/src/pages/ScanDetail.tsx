@@ -56,6 +56,15 @@ export default function ScanDetail() {
     return matchesFilter && matchesSearch;
   });
 
+  // Extract region from resource_id if it has [region] prefix
+  const extractRegion = (resourceId: string): { region: string | null; cleanId: string } => {
+    const match = resourceId.match(/^\[([^\]]+)\]\s*(.+)$/);
+    if (match) {
+      return { region: match[1], cleanId: match[2] };
+    }
+    return { region: null, cleanId: resourceId };
+  };
+
   const confidenceColors = {
     high: 'bg-green-900/50 text-green-300',
     medium: 'bg-yellow-900/50 text-yellow-300',
@@ -71,10 +80,11 @@ export default function ScanDetail() {
         <h1 className="text-3xl font-bold text-white mb-2">
           Scan #{scan.id} - {scan.provider.toUpperCase()}
         </h1>
-        <p className="text-slate-400">
-          {new Date(scan.started_at).toLocaleString()}
-          {scan.region && ` · ${scan.region}`}
-        </p>
+        <div className="flex gap-4 text-slate-400 text-sm">
+          <span>📅 {new Date(scan.started_at).toLocaleString()}</span>
+          {scan.account_id && <span>👤 Account: {scan.account_id}</span>}
+          {scan.region && <span>🌍 {scan.region}</span>}
+        </div>
       </div>
 
       {/* Summary */}
@@ -129,29 +139,38 @@ export default function ScanDetail() {
           </div>
         ) : (
           <div className="divide-y divide-slate-700">
-            {filteredOpportunities.map((opp) => (
-              <div key={opp.id} className="p-6 hover:bg-slate-700/30 transition-colors">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-white font-medium">{opp.resource_type.toUpperCase()}</span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${confidenceColors[opp.confidence]}`}>
-                        {opp.confidence.toUpperCase()}
-                      </span>
-                      <span className="text-xs text-slate-500">{opp.category}</span>
+            {filteredOpportunities.map((opp) => {
+              const { region, cleanId } = extractRegion(opp.resource_id);
+              
+              return (
+                <div key={opp.id} className="p-6 hover:bg-slate-700/30 transition-colors">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
+                        <span className="text-white font-medium">{opp.resource_type.toUpperCase()}</span>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${confidenceColors[opp.confidence]}`}>
+                          {opp.confidence.toUpperCase()}
+                        </span>
+                        <span className="text-xs text-slate-500">{opp.category}</span>
+                        {region && (
+                          <span className="px-2 py-1 rounded text-xs font-medium bg-blue-900/50 text-blue-300">
+                            🌍 {region}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-slate-400 font-mono mb-2">{cleanId}</div>
+                      <div className="text-slate-300">{opp.recommendation}</div>
                     </div>
-                    <div className="text-sm text-slate-400 font-mono mb-2">{opp.resource_id}</div>
-                    <div className="text-slate-300">{opp.recommendation}</div>
-                  </div>
-                  <div className="text-right ml-6">
-                    <div className="text-2xl font-bold text-green-400">
-                      ${opp.estimated_savings.toFixed(2)}
+                    <div className="text-right ml-6">
+                      <div className="text-2xl font-bold text-green-400">
+                        ${opp.estimated_savings.toFixed(2)}
+                      </div>
+                      <div className="text-sm text-slate-500">/month</div>
                     </div>
-                    <div className="text-sm text-slate-500">/month</div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
