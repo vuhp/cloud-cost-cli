@@ -174,16 +174,22 @@ export function getOpportunities(scanId: number) {
 
 export function getStats() {
   const totalScans = db.prepare('SELECT COUNT(*) as count FROM scans').get() as any;
-  const totalSavings = db.prepare(`
-    SELECT SUM(total_savings) as total FROM scans WHERE status = 'completed'
+  
+  // Get the most recent completed scan's savings (not cumulative)
+  const latestScan = db.prepare(`
+    SELECT total_savings FROM scans 
+    WHERE status = 'completed' 
+    ORDER BY started_at DESC 
+    LIMIT 1
   `).get() as any;
+  
   const recentScans = db.prepare(`
     SELECT * FROM scans ORDER BY started_at DESC LIMIT 10
   `).all();
 
   return {
     totalScans: totalScans.count,
-    totalSavings: totalSavings.total || 0,
+    totalSavings: latestScan?.total_savings || 0,
     recentScans,
   };
 }
