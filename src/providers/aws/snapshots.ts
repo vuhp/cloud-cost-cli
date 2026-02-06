@@ -49,7 +49,7 @@ export async function analyzeSnapshots(
           currentCost: monthlyCost,
           estimatedSavings: monthlyCost,
           confidence: 'medium',
-          recommendation: `Review old EBS snapshot (${ageInDays} days old, ${sizeGB} GB). Delete if no longer needed.`,
+          recommendation: `Review old EBS snapshot (${ageInDays} days old, ${sizeGB} GB volume size). Delete if no longer needed. Note: Actual cost may be lower (snapshots are incremental).`,
           metadata: {
             type: 'EBS',
             snapshotId,
@@ -74,7 +74,7 @@ export async function analyzeSnapshots(
           currentCost: monthlyCost,
           estimatedSavings: monthlyCost * 0.5, // Assume 50% could be cleaned
           confidence: 'low',
-          recommendation: `Large EBS snapshot (${sizeGB} GB). Review if full size is needed or consolidate with lifecycle policy.`,
+          recommendation: `Large EBS snapshot (${sizeGB} GB volume size). Review if full size is needed or consolidate with lifecycle policy. Note: Actual stored data may be less (snapshots are incremental).`,
           metadata: {
             type: 'EBS',
             snapshotId,
@@ -115,7 +115,7 @@ export async function analyzeSnapshots(
           currentCost: monthlyCost,
           estimatedSavings: monthlyCost,
           confidence: 'medium',
-          recommendation: `Review old RDS snapshot (${ageInDays} days old, ${sizeGB} GB). Delete if no longer needed.`,
+          recommendation: `Review old RDS snapshot (${ageInDays} days old, ${sizeGB} GB allocated). Delete if no longer needed. Note: Actual cost may be lower (snapshots are incremental).`,
           metadata: {
             type: 'RDS',
             snapshotId,
