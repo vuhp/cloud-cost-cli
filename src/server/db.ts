@@ -174,16 +174,15 @@ export function getOpportunities(scanId: number) {
 export function getStats() {
   const totalScans = db.prepare('SELECT COUNT(*) as count FROM scans').get() as any;
   
-  // Get the most recent scan per provider+region combination
-  // This ensures we don't accumulate multiple scans of the same provider/region,
-  // but we do sum across different providers/regions
+  // Get the most recent scan per provider (not per provider+region)
+  // This prevents double-counting when scanning specific regions then all-regions
   const latestSavings = db.prepare(`
     SELECT SUM(total_savings) as total
     FROM (
-      SELECT provider, region, total_savings
+      SELECT provider, total_savings
       FROM scans
       WHERE status = 'completed'
-      GROUP BY provider, region
+      GROUP BY provider
       HAVING started_at = MAX(started_at)
     )
   `).get() as any;
@@ -207,15 +206,14 @@ export function getTrendData(days: number = 30) {
       COUNT(*) as scan_count
     FROM (
       SELECT 
-        provider, 
-        region, 
+        provider,
         DATE(started_at) as date,
         total_savings,
         started_at
       FROM scans
       WHERE status = 'completed'
         AND started_at >= datetime('now', '-' || ? || ' days')
-      GROUP BY provider, region, DATE(started_at)
+      GROUP BY provider, DATE(started_at)
       HAVING started_at = MAX(started_at)
     )
     GROUP BY date
