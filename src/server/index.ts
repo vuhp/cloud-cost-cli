@@ -123,7 +123,7 @@ app.get('/api/scans/:id', (req: Request, res: Response) => {
 // Trigger a new scan
 app.post('/api/scans', async (req: Request, res: Response) => {
   try {
-    const { provider, region, credentialsId } = req.body;
+    const { provider, region, credentialsId, detailedMetrics } = req.body;
 
     if (!provider) {
       return res.status(400).json({ error: 'Provider is required' });
@@ -156,7 +156,7 @@ app.post('/api/scans', async (req: Request, res: Response) => {
     const { runScan } = await import('./scanner.js');
 
     // Run scan in background with credentials
-    runScan(scanId, provider, credentials, region)
+    runScan(scanId, provider, credentials, region, detailedMetrics || false)
       .then((result) => {
         updateScanStatus(scanId, 'completed', {
           totalSavings: result.totalSavings,

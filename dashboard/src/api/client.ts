@@ -95,11 +95,11 @@ export const api = {
     return res.json();
   },
 
-  async triggerScan(provider: string, credentialsId?: number, region?: string): Promise<{ scanId: number }> {
+  async triggerScan(provider: string, credentialsId?: number, region?: string, detailedMetrics?: boolean): Promise<{ scanId: number }> {
     const res = await fetch(`${API_BASE}/scans`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider, credentialsId, region }),
+      body: JSON.stringify({ provider, credentialsId, region, detailedMetrics }),
     });
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: 'Failed to trigger scan' }));

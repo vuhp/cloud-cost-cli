@@ -14,6 +14,7 @@ import {
 import { api } from '../api/client';
 import type { Stats, TrendData } from '../api/client';
 import { Link } from 'react-router-dom';
+import ScanDialog from '../components/ScanDialog';
 
 ChartJS.register(
   CategoryScale,
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanDialog, setScanDialog] = useState<{ open: boolean; provider: string }>({ open: false, provider: '' });
 
   useEffect(() => {
     loadData();
@@ -69,12 +71,11 @@ export default function Dashboard() {
     }
   }
 
-  async function handleScan(provider: string) {
+  async function handleScan(credentialsId: number | undefined, region: string | undefined, detailedMetrics: boolean) {
     try {
       setScanning(true);
       setError(null);
-      // Use latest credentials for this provider (backend will handle it)
-      await api.triggerScan(provider);
+      await api.triggerScan(scanDialog.provider, credentialsId, region, detailedMetrics);
     } catch (error: any) {
       console.error('Failed to trigger scan:', error);
       setScanning(false);
@@ -205,7 +206,7 @@ export default function Dashboard() {
         <h2 className="text-xl font-semibold text-white mb-4">Run New Scan</h2>
         <div className="flex gap-4">
           <button
-            onClick={() => handleScan('aws')}
+            onClick={() => setScanDialog({ open: true, provider: 'aws' })}
             disabled={scanning}
             className="px-6 py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center gap-2"
           >
@@ -220,7 +221,7 @@ export default function Dashboard() {
           </button>
           
           <button
-            onClick={() => handleScan('azure')}
+            onClick={() => setScanDialog({ open: true, provider: 'azure' })}
             disabled={scanning}
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
           >
@@ -228,7 +229,7 @@ export default function Dashboard() {
           </button>
           
           <button
-            onClick={() => handleScan('gcp')}
+            onClick={() => setScanDialog({ open: true, provider: 'gcp' })}
             disabled={scanning}
             className="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
           >
@@ -236,6 +237,14 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
+
+      {/* Scan Dialog */}
+      <ScanDialog
+        isOpen={scanDialog.open}
+        provider={scanDialog.provider}
+        onClose={() => setScanDialog({ open: false, provider: '' })}
+        onScan={handleScan}
+      />
 
       {/* Trend Chart */}
       {trends.length > 0 && (
