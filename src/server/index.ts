@@ -166,12 +166,25 @@ app.post('/api/scans', async (req: Request, res: Response) => {
 
 // Serve static files (React app will be here)
 const dashboardPath = path.join(__dirname, '../../dashboard/dist');
-app.use(express.static(dashboardPath));
 
-// Catch-all route for React Router
-app.get('*', (req: Request, res: Response) => {
-  res.sendFile(path.join(dashboardPath, 'index.html'));
-});
+// Only serve static files if dist exists (production mode)
+import { existsSync } from 'fs';
+if (existsSync(dashboardPath)) {
+  app.use(express.static(dashboardPath));
+  
+  // Catch-all route for React Router (must be LAST, after all API routes)
+  app.get('/*', (req: Request, res: Response) => {
+    res.sendFile(path.join(dashboardPath, 'index.html'));
+  });
+} else {
+  // Development mode - just show a message
+  app.get('/*', (req: Request, res: Response) => {
+    res.json({
+      message: 'Dashboard UI not built yet. Run "cd dashboard && npm run build" first.',
+      api: 'API is available at /api/*',
+    });
+  });
+}
 
 export function startDashboardServer() {
   server.listen(PORT, () => {
