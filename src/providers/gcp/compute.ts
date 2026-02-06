@@ -235,8 +235,8 @@ async function getDetailedMetrics(
           name: `projects/${projectId}`,
           filter: 
             `metric.type="${metricType}" ` +
-            `AND resource.labels.instance_id="${instanceName}" ` +
-            `AND resource.labels.zone="${zone}"`,
+            `AND resource.type="gce_instance" ` +
+            `AND resource.labels.instance_name="${instanceName}"`,
           interval,
           aggregation,
         };
@@ -311,8 +311,8 @@ async function getAvgCPU(
       name: `projects/${projectId}`,
       filter: 
         `metric.type="compute.googleapis.com/instance/cpu/utilization" ` +
-        `AND resource.labels.instance_id="${instanceName}" ` +
-        `AND resource.labels.zone="${zone}"`,
+        `AND resource.type="gce_instance" ` +
+        `AND resource.labels.instance_name="${instanceName}"`,
       interval: {
         startTime: {
           seconds: Math.floor(startTime.getTime() / 1000),
