@@ -45,6 +45,19 @@ export interface TrendData {
   scan_count: number;
 }
 
+export interface CloudCredential {
+  id: number;
+  provider: string;
+  name: string;
+  created_at: string;
+}
+
+export interface SaveCredentialsRequest {
+  provider: string;
+  name: string;
+  credentials: Record<string, string>;
+}
+
 export const api = {
   async getStats(): Promise<Stats> {
     const res = await fetch(`${API_BASE}/stats`);
@@ -70,14 +83,37 @@ export const api = {
     return res.json();
   },
 
-  async triggerScan(provider: string, region?: string): Promise<{ scanId: number }> {
+  async triggerScan(provider: string, credentialsId?: number, region?: string): Promise<{ scanId: number }> {
     const res = await fetch(`${API_BASE}/scans`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ provider, region }),
+      body: JSON.stringify({ provider, credentialsId, region }),
     });
     if (!res.ok) throw new Error('Failed to trigger scan');
     return res.json();
+  },
+
+  async getCredentials(): Promise<CloudCredential[]> {
+    const res = await fetch(`${API_BASE}/credentials`);
+    if (!res.ok) throw new Error('Failed to fetch credentials');
+    return res.json();
+  },
+
+  async saveCredentials(data: SaveCredentialsRequest): Promise<{ id: number }> {
+    const res = await fetch(`${API_BASE}/credentials`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to save credentials');
+    return res.json();
+  },
+
+  async deleteCredentials(id: number): Promise<void> {
+    const res = await fetch(`${API_BASE}/credentials/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete credentials');
   },
 
   connectWebSocket(onMessage: (data: any) => void): WebSocket {

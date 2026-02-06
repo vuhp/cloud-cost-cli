@@ -14,6 +14,13 @@ import {
   getStats,
   getTrendData,
 } from './db.js';
+import {
+  initializeCredentialsSchema,
+  saveCredentials,
+  listCredentials,
+  getCredentials,
+  deleteCredentials,
+} from './credentials.js';
 
 const PORT = 9090;
 const app = express();
@@ -26,6 +33,7 @@ app.use(express.json());
 
 // Initialize database
 initializeSchema();
+initializeCredentialsSchema();
 
 // WebSocket for real-time updates
 const clients = new Set<any>();
@@ -115,10 +123,27 @@ app.get('/api/scans/:id', (req: Request, res: Response) => {
 // Trigger a new scan
 app.post('/api/scans', async (req: Request, res: Response) => {
   try {
-    const { provider, region } = req.body;
+    const { provider, region, credentialsId } = req.body;
 
     if (!provider) {
       return res.status(400).json({ error: 'Provider is required' });
+    }
+
+    // Get credentials if credentialsId provided, or use latest for provider
+    let credentials: Record<string, string> | undefined;
+    if (credentialsId) {
+      const creds = getCredentials(credentialsId);
+      if (!creds) {
+        return res.status(404).json({ error: 'Credentials not found' });
+      }
+      credentials = creds.credentials;
+    } else {
+      // Try to find latest credentials for this provider
+      const { getCredentialsByProvider } = await import('./credentials.js');
+      const creds = getCredentialsByProvider(provider);
+      if (creds) {
+        credentials = creds.credentials;
+      }
     }
 
     // Create scan record
@@ -130,8 +155,8 @@ app.post('/api/scans', async (req: Request, res: Response) => {
     // Import scan function dynamically
     const { runScan } = await import('./scanner.js');
 
-    // Run scan in background
-    runScan(scanId, provider, region)
+    // Run scan in background with credentials
+    runScan(scanId, provider, credentials, region)
       .then((result) => {
         updateScanStatus(scanId, 'completed', {
           totalSavings: result.totalSavings,
@@ -159,6 +184,46 @@ app.post('/api/scans', async (req: Request, res: Response) => {
       });
 
     res.json({ scanId, status: 'started' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Credentials API endpoints
+
+// List all credentials (without sensitive data)
+app.get('/api/credentials', (req: Request, res: Response) => {
+  try {
+    const creds = listCredentials();
+    res.json(creds);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Save new credentials
+app.post('/api/credentials', (req: Request, res: Response) => {
+  try {
+    const { provider, name, credentials } = req.body;
+    
+    if (!provider || !name || !credentials) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+    
+    const id = saveCredentials({ provider, name, credentials });
+    res.json({ id, message: 'Credentials saved successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete credentials
+app.delete('/api/credentials/:id', (req: Request, res: Response) => {
+  try {
+    const idParam = req.params.id;
+    const id = parseInt(typeof idParam === 'string' ? idParam : idParam[0]);
+    deleteCredentials(id);
+    res.json({ message: 'Credentials deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

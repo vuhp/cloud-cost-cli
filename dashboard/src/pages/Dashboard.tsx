@@ -66,9 +66,11 @@ export default function Dashboard() {
   async function handleScan(provider: string) {
     try {
       setScanning(true);
+      // Use latest credentials for this provider (backend will handle it)
       await api.triggerScan(provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to trigger scan:', error);
+      alert(error.message || 'Failed to start scan. Make sure credentials are configured in Settings.');
       setScanning(false);
     }
   }

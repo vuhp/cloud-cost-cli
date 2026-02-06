@@ -38,6 +38,7 @@ interface ScanResult {
 export async function runScan(
   scanId: number,
   provider: string,
+  credentials?: Record<string, string>,
   region?: string,
   detailedMetrics: boolean = false
 ): Promise<ScanResult> {
@@ -51,7 +52,15 @@ export async function runScan(
     }
 
     if (provider === 'aws') {
-      const client = new AWSClient({ region: region || 'us-east-1' });
+      // Use provided credentials or fall back to environment/CLI
+      const clientConfig: any = { region: region || 'us-east-1' };
+      if (credentials) {
+        clientConfig.credentials = {
+          accessKeyId: credentials.accessKeyId,
+          secretAccessKey: credentials.secretAccessKey,
+        };
+      }
+      const client = new AWSClient(clientConfig);
 
       // Run all AWS analyzers in parallel
       const results = await Promise.all([
@@ -68,7 +77,15 @@ export async function runScan(
 
       results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
     } else if (provider === 'azure') {
-      const client = new AzureClient({ location: region });
+      // Use provided credentials or fall back to Azure CLI
+      const clientConfig: any = { location: region };
+      if (credentials) {
+        clientConfig.subscriptionId = credentials.subscriptionId;
+        clientConfig.tenantId = credentials.tenantId;
+        clientConfig.clientId = credentials.clientId;
+        clientConfig.clientSecret = credentials.clientSecret;
+      }
+      const client = new AzureClient(clientConfig);
 
       // Run all Azure analyzers in parallel
       const results = await Promise.all([
@@ -82,7 +99,13 @@ export async function runScan(
 
       results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
     } else if (provider === 'gcp') {
-      const client = new GCPClient({ region: region || 'us-central1' });
+      // Use provided credentials or fall back to gcloud CLI
+      const clientConfig: any = { region: region || 'us-central1' };
+      if (credentials) {
+        clientConfig.projectId = credentials.projectId;
+        clientConfig.keyFile = credentials.keyFile; // Path to service account JSON
+      }
+      const client = new GCPClient(clientConfig);
 
       // Run all GCP analyzers in parallel
       const results = await Promise.all([
