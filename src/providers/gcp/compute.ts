@@ -68,15 +68,15 @@ export async function analyzeGCEInstances(
     });
 
     for await (const instance of instances) {
-      if (!instance.name || !instance.machineType) continue;
+      if (!instance.name || !instance.machineType || !instance.id) continue;
 
       // Extract machine type from full URL
       const machineType = instance.machineType.split('/').pop() || '';
 
-      // Get metrics based on mode
+      // Get metrics based on mode (use instance.id which is the numeric ID)
       const metrics = detailedMetrics
-        ? await getDetailedMetrics(monitoringClient, client.projectId, instance.name, zone, 30)
-        : await getBasicMetrics(monitoringClient, client.projectId, instance.name, zone, 30);
+        ? await getDetailedMetrics(monitoringClient, client.projectId, instance.id.toString(), zone, 30)
+        : await getBasicMetrics(monitoringClient, client.projectId, instance.id.toString(), zone, 30);
 
       // Determine if instance is idle/underutilized
       const isIdle = metrics.cpu < 5;
@@ -186,11 +186,11 @@ export async function analyzeGCEInstances(
 async function getBasicMetrics(
   monitoringClient: any,
   projectId: string,
-  instanceName: string,
+  instanceId: string,
   zone: string,
   days: number
 ): Promise<GCEMetrics> {
-  const cpu = await getAvgCPU(monitoringClient, projectId, instanceName, zone, days);
+  const cpu = await getAvgCPU(monitoringClient, projectId, instanceId, zone, days);
   return { cpu };
 }
 
@@ -198,7 +198,7 @@ async function getBasicMetrics(
 async function getDetailedMetrics(
   monitoringClient: any,
   projectId: string,
-  instanceName: string,
+  instanceId: string,
   zone: string,
   days: number
 ): Promise<GCEMetrics> {
@@ -236,14 +236,15 @@ async function getDetailedMetrics(
           filter: 
             `metric.type="${metricType}" ` +
             `AND resource.type="gce_instance" ` +
-            `AND resource.labels.instance_name="${instanceName}"`,
+            `AND resource.labels.instance_id="${instanceId}" ` +
+            `AND resource.labels.zone="${zone}"`,
           interval,
           aggregation,
         };
 
         const [timeSeries] = await monitoringClient.listTimeSeries(request);
 
-        console.error(`[GCP Metrics] ${metricType}: ${timeSeries?.length || 0} time series found for instance ${instanceName}`);
+        console.error(`[GCP Metrics] ${metricType}: ${timeSeries?.length || 0} time series found for instance ${instanceId}`);
 
         if (!timeSeries || timeSeries.length === 0) continue;
 
@@ -292,13 +293,13 @@ async function getDetailedMetrics(
       }
     }
 
-    console.error(`[GCP Metrics] Final metrics for ${instanceName}:`, JSON.stringify(metrics, null, 2));
+    console.error(`[GCP Metrics] Final metrics for instance ${instanceId}:`, JSON.stringify(metrics, null, 2));
 
     return metrics;
   } catch (error) {
     console.error('Error fetching detailed metrics:', error);
     // Fallback to basic metrics
-    const cpu = await getAvgCPU(monitoringClient, projectId, instanceName, zone, days);
+    const cpu = await getAvgCPU(monitoringClient, projectId, instanceId, zone, days);
     return { cpu };
   }
 }
@@ -306,7 +307,7 @@ async function getDetailedMetrics(
 async function getAvgCPU(
   monitoringClient: any,
   projectId: string,
-  instanceName: string,
+  instanceId: string,
   zone: string,
   days: number
 ): Promise<number> {
@@ -319,7 +320,8 @@ async function getAvgCPU(
       filter: 
         `metric.type="compute.googleapis.com/instance/cpu/utilization" ` +
         `AND resource.type="gce_instance" ` +
-        `AND resource.labels.instance_name="${instanceName}"`,
+        `AND resource.labels.instance_id="${instanceId}" ` +
+        `AND resource.labels.zone="${zone}"`,
       interval: {
         startTime: {
           seconds: Math.floor(startTime.getTime() / 1000),
