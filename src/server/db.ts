@@ -32,7 +32,7 @@ export function initializeSchema() {
     -- Scans table
     CREATE TABLE IF NOT EXISTS scans (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      account_id INTEGER,
+      account_id TEXT,
       provider TEXT NOT NULL,
       region TEXT,
       status TEXT DEFAULT 'running',
@@ -40,8 +40,7 @@ export function initializeSchema() {
       completed_at DATETIME,
       total_savings REAL DEFAULT 0,
       opportunity_count INTEGER DEFAULT 0,
-      error_message TEXT,
-      FOREIGN KEY (account_id) REFERENCES accounts(id)
+      error_message TEXT
     );
 
     -- Opportunities table
