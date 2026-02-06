@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:9090/api';
+const API_BASE = '/api';
 
 export interface Scan {
   id: number;
@@ -81,7 +81,8 @@ export const api = {
   },
 
   connectWebSocket(onMessage: (data: any) => void): WebSocket {
-    const ws = new WebSocket('ws://localhost:9090');
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.host}`);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       onMessage(data);
