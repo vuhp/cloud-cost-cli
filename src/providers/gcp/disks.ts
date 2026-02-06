@@ -74,11 +74,12 @@ function getDiskPricePerGB(diskType: string): number {
 }
 
 function getZonesInRegion(region: string): string[] {
-  // Common GCP zones per region
+  // Most GCP regions have zones a, b, c
+  // Some regions have additional zones (d, e, f), but not all
+  // Using the common subset to avoid "Unknown zone" errors
   return [
     `${region}-a`,
     `${region}-b`,
     `${region}-c`,
-    `${region}-f`,
   ];
 }
