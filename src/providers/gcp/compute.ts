@@ -243,6 +243,8 @@ async function getDetailedMetrics(
 
         const [timeSeries] = await monitoringClient.listTimeSeries(request);
 
+        console.error(`[GCP Metrics] ${metricType}: ${timeSeries?.length || 0} time series found for instance ${instanceName}`);
+
         if (!timeSeries || timeSeries.length === 0) continue;
 
         let sum = 0;
@@ -259,6 +261,8 @@ async function getDetailedMetrics(
 
         if (count === 0) continue;
         const avg = sum / count;
+
+        console.error(`[GCP Metrics] ${metricType}: avg = ${avg}`);
 
         // Map to metrics object
         switch (metricType) {
@@ -281,11 +285,14 @@ async function getDetailedMetrics(
             metrics.diskWriteOps = avg;
             break;
         }
-      } catch (error) {
+      } catch (error: any) {
         // Some metrics may not be available, continue with others
+        console.error(`[GCP Metrics] Error fetching ${metricType}:`, error.message || error);
         continue;
       }
     }
+
+    console.error(`[GCP Metrics] Final metrics for ${instanceName}:`, JSON.stringify(metrics, null, 2));
 
     return metrics;
   } catch (error) {
