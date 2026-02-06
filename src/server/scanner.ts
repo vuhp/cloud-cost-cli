@@ -44,6 +44,12 @@ export async function runScan(
   const opportunities: SavingsOpportunity[] = [];
 
   try {
+    // Check for demo mode (environment variable)
+    if (process.env.DEMO_MODE === 'true') {
+      console.log('Running in DEMO mode - generating mock data');
+      return generateMockScanResult(provider);
+    }
+
     if (provider === 'aws') {
       const client = new AWSClient({ region: region || 'us-east-1' });
 
@@ -104,4 +110,61 @@ export async function runScan(
     console.error(`Scan ${scanId} failed:`, error);
     throw error;
   }
+}
+
+// Mock data generator for testing dashboard without real cloud credentials
+function generateMockScanResult(provider: string): ScanResult {
+  const mockOpportunities: SavingsOpportunity[] = [
+    {
+      id: 'mock-1',
+      provider: provider as 'aws' | 'azure' | 'gcp',
+      resourceType: 'ec2-instance',
+      resourceId: 'i-1234567890abcdef0',
+      resourceName: 'demo-server',
+      category: 'underutilized',
+      currentCost: 73.00,
+      estimatedSavings: 58.40,
+      confidence: 'high',
+      recommendation: 'Instance running at 5% CPU - consider downsizing from t3.large to t3.small',
+      metadata: { currentType: 't3.large', recommendedType: 't3.small', region: 'us-east-1' },
+      detectedAt: new Date(),
+    },
+    {
+      id: 'mock-2',
+      provider: provider as 'aws' | 'azure' | 'gcp',
+      resourceType: 'ebs-volume',
+      resourceId: 'vol-0abcd1234efgh5678',
+      resourceName: 'unused-volume',
+      category: 'unused',
+      currentCost: 20.00,
+      estimatedSavings: 20.00,
+      confidence: 'high',
+      recommendation: 'Unattached EBS volume - delete if no longer needed',
+      metadata: { size: 200, type: 'gp3', region: 'us-east-1' },
+      detectedAt: new Date(),
+    },
+    {
+      id: 'mock-3',
+      provider: provider as 'aws' | 'azure' | 'gcp',
+      resourceType: 's3-bucket',
+      resourceId: 'old-backup-bucket-2023',
+      category: 'unused',
+      currentCost: 45.00,
+      estimatedSavings: 33.75,
+      confidence: 'medium',
+      recommendation: 'Move 90% of objects to S3 Glacier for long-term storage',
+      metadata: { storageClass: 'STANDARD', objects: 15000, region: 'us-west-2' },
+      detectedAt: new Date(),
+    },
+  ];
+
+  const totalSavings = mockOpportunities.reduce(
+    (sum, opp) => sum + opp.estimatedSavings,
+    0
+  );
+
+  return {
+    totalSavings,
+    opportunities: mockOpportunities,
+  };
 }
