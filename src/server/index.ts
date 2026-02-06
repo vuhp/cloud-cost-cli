@@ -173,16 +173,26 @@ if (existsSync(dashboardPath)) {
   app.use(express.static(dashboardPath));
   
   // Catch-all route for React Router (must be LAST, after all API routes)
-  app.get('/*', (req: Request, res: Response) => {
-    res.sendFile(path.join(dashboardPath, 'index.html'));
+  // Use a function handler without specific path pattern to avoid path-to-regexp issues
+  app.use((req: Request, res: Response, next) => {
+    // Only handle GET requests that aren't API calls
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+      res.sendFile(path.join(dashboardPath, 'index.html'));
+    } else {
+      next();
+    }
   });
 } else {
-  // Development mode - just show a message
-  app.get('/*', (req: Request, res: Response) => {
-    res.json({
-      message: 'Dashboard UI not built yet. Run "cd dashboard && npm run build" first.',
-      api: 'API is available at /api/*',
-    });
+  // Development mode - just show a message for non-API routes
+  app.use((req: Request, res: Response, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api')) {
+      res.json({
+        message: 'Dashboard UI not built yet. Run "cd dashboard && npm run build" first.',
+        api: 'API is available at /api/*',
+      });
+    } else {
+      next();
+    }
   });
 }
 
