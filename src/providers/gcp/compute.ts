@@ -1,7 +1,43 @@
 import { GCPClient } from './client';
 import { SavingsOpportunity } from '../../types/opportunity';
 import { getGCEMonthlyCost } from '../../analyzers/cost-estimator';
+import { ZonesClient } from '@google-cloud/compute';
 import dayjs from 'dayjs';
+
+// Cache zones per region to avoid repeated API calls
+const zonesCache = new Map<string, string[]>();
+
+async function getZonesInRegion(client: GCPClient, region: string): Promise<string[]> {
+  // Check cache first
+  if (zonesCache.has(region)) {
+    return zonesCache.get(region)!;
+  }
+
+  try {
+    const zonesClient = new ZonesClient();
+    const [zones] = await zonesClient.list({
+      project: client.projectId,
+      filter: `name:${region}-*`,
+    });
+
+    const zoneNames = zones
+      .filter(z => z.name && z.status === 'UP')
+      .map(z => z.name!);
+
+    // Cache the result
+    if (zoneNames.length > 0) {
+      zonesCache.set(region, zoneNames);
+      return zoneNames;
+    }
+  } catch (error) {
+    console.error(`Failed to fetch zones for region ${region}, using fallback:`, error);
+  }
+  
+  // Fallback to common zones if API call fails or returns empty
+  const fallbackZones = [`${region}-a`, `${region}-b`, `${region}-c`];
+  zonesCache.set(region, fallbackZones);
+  return fallbackZones;
+}
 
 interface GCEMetrics {
   cpu: number;
@@ -22,7 +58,7 @@ export async function analyzeGCEInstances(
   const opportunities: SavingsOpportunity[] = [];
 
   // GCP instances are zone-specific, so we need to check multiple zones
-  const zones = await getZonesInRegion(client.region);
+  const zones = await getZonesInRegion(client, client.region);
 
   for (const zone of zones) {
     const [instances] = await computeClient.list({
@@ -348,15 +384,4 @@ function buildDetailedRecommendation(
   } else {
     return `Low utilization (${metricsSummary}) - consider downsizing to smaller machine type`;
   }
-}
-
-function getZonesInRegion(region: string): string[] {
-  // Most GCP regions have zones a, b, c
-  // Some regions have additional zones (d, e, f), but not all
-  // Using the common subset to avoid "Unknown zone" errors
-  return [
-    `${region}-a`,
-    `${region}-b`,
-    `${region}-c`,
-  ];
 }
