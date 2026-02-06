@@ -5,6 +5,7 @@ import { askCommand } from '../src/commands/ask.js';
 import { configCommand } from '../src/commands/config.js';
 import { costsCommand } from '../src/commands/costs.js';
 import { compareCommand } from '../src/commands/compare.js';
+import { dashboardCommand } from '../src/commands/dashboard.js';
 
 const program = new Command();
 
@@ -61,5 +62,8 @@ program
   .option('--to <path>', 'Path to newer scan report')
   .option('--output <format>', 'Output format: table, json', 'table')
   .action(compareCommand);
+
+// Register dashboard command
+program.addCommand(dashboardCommand);
 
 program.parse();

@@ -5,10 +5,10 @@
 
 **Optimize your cloud spend in seconds.**
 
-A command-line tool that analyzes your AWS, Azure, and GCP resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
+A powerful CLI and web dashboard for analyzing AWS, Azure, and GCP resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
-**✨ NEW:** Multi-region scanning — Scan all AWS regions at once!  
-**✨ NEW:** Comparison mode — Track your cost optimization progress over time!  
+**✨ NEW:** Web Dashboard — Interactive UI with secure credential storage and real-time scans!  
+**✨ NEW:** Multi-region scanning for all clouds — Scan AWS, Azure, and GCP regions at once!  
 **✨ v0.7.0:** Multi-metric analysis — Comprehensive resource utilization (CPU, memory, network, disk) with confidence scoring!  
 **✨ v0.6.2:** HTML export — Beautiful, interactive reports that auto-open in your browser!  
 **✨ v0.6.0:** 11 additional analyzers — Lambda, DynamoDB, ElastiCache, CosmosDB, and more!
@@ -17,9 +17,10 @@ A command-line tool that analyzes your AWS, Azure, and GCP resources to identify
 
 ## Features
 
+- **🖥️ Web Dashboard** — Interactive UI with credential management, real-time scans, and trend charts
 - **Multi-metric analysis** — CPU + memory + network + disk for high-confidence recommendations (AWS, Azure, GCP)
 - **Multi-cloud support** - AWS (15 analyzers), Azure (8 analyzers), GCP (5 analyzers)
-- **Multi-region scanning** — Find resources in all AWS regions at once
+- **Multi-region scanning** — Find resources in all regions at once (AWS, Azure, GCP)
 - **Comparison mode** — Track optimization progress over time
 - **AI-powered explanations** — Human-readable recommendations (OpenAI or local Ollama)
 - **Natural language queries** — Ask questions like "What's my biggest cost?"
@@ -41,6 +42,46 @@ npm install -g cloud-cost-cli
 ```
 
 **Optional:** OpenAI API key or [Ollama](https://ollama.ai) for AI features
+
+---
+
+## Quick Start
+
+### Web Dashboard (Recommended)
+
+Launch the interactive web dashboard with credential management and real-time scans:
+
+```bash
+cloud-cost-cli dashboard
+```
+
+Features:
+- 🔐 **Secure credential storage** - Encrypted locally with AES-256-GCM
+- 🌍 **Multi-region scanning** - Select specific regions or scan all at once
+- 📊 **Real-time updates** - WebSocket-powered progress tracking
+- 📈 **Trend charts** - Visualize savings over time
+- 🎯 **Detailed opportunities** - Each with account, region, and confidence level
+- 💾 **Scan history** - Track all scans with filterable results
+
+The dashboard runs at `http://localhost:9090` and automatically opens in your browser.
+
+### Command Line
+
+For automation and CI/CD, use the CLI directly:
+
+```bash
+# Scan AWS (specific region)
+cloud-cost-cli scan --provider aws --region us-east-1
+
+# Scan all AWS regions
+cloud-cost-cli scan --provider aws --all-regions
+
+# Scan Azure
+cloud-cost-cli scan --provider azure --location eastus
+
+# Scan GCP
+cloud-cost-cli scan --provider gcp --region us-central1
+```
 
 ---
 
@@ -132,6 +173,46 @@ cloud-cost-cli scan && cloud-cost-cli compare
 
 ## Usage
 
+### Web Dashboard
+
+Launch the interactive dashboard:
+
+```bash
+cloud-cost-cli dashboard
+```
+
+**Dashboard Features:**
+
+1. **Credential Management** (Settings page)
+   - Add AWS, Azure, or GCP credentials
+   - Encrypted locally with AES-256-GCM
+   - Support for multiple accounts per provider
+
+2. **Run Scans** (Dashboard page)
+   - Select cloud provider (AWS, Azure, GCP)
+   - Choose account (if multiple configured)
+   - Pick specific region or "All Regions"
+   - Toggle detailed metrics for high-confidence analysis
+
+3. **View Results**
+   - Real-time progress via WebSocket
+   - Total savings and annual projections
+   - Trend charts (30-day history)
+   - Recent scans list
+
+4. **Scan Details**
+   - Filter by confidence level (High/Medium/Low)
+   - Search opportunities by resource ID or type
+   - Each opportunity shows:
+     - Account ID / Project ID / Subscription ID
+     - Region (with badge in multi-region scans)
+     - Resource type and ID
+     - Confidence level
+     - Estimated monthly savings
+     - Actionable recommendation
+
+### CLI Usage
+
 ### Multi-Metric Analysis (High Confidence)
 ```bash
 # Default: Fast scan with CPU-only analysis
@@ -161,6 +242,23 @@ cloud-cost-cli scan --provider gcp --region us-central1 --detailed-metrics
 - When accuracy matters more than speed
 
 **Performance:** Adds ~15-30 seconds per 100 resources (negligible API cost)
+
+### Multi-Region Scanning
+```bash
+# Scan all AWS regions
+cloud-cost-cli scan --provider aws --all-regions
+
+# Scan all Azure locations
+cloud-cost-cli scan --provider azure --all-regions
+
+# Scan all GCP regions
+cloud-cost-cli scan --provider gcp --all-regions
+
+# With detailed metrics
+cloud-cost-cli scan --provider aws --all-regions --detailed-metrics
+```
+
+**Output:** Resources are tagged with `[region]` prefix for easy identification.
 
 ### AI Explanations
 ```bash

@@ -1,5 +1,41 @@
 import { GCPClient } from './client';
 import { SavingsOpportunity } from '../../types/opportunity';
+import { ZonesClient } from '@google-cloud/compute';
+
+// Cache zones per region to avoid repeated API calls (shared with compute.ts if needed)
+const zonesCache = new Map<string, string[]>();
+
+async function getZonesInRegion(client: GCPClient, region: string): Promise<string[]> {
+  // Check cache first
+  if (zonesCache.has(region)) {
+    return zonesCache.get(region)!;
+  }
+
+  try {
+    const zonesClient = new ZonesClient();
+    const [zones] = await zonesClient.list({
+      project: client.projectId,
+      filter: `name:${region}-*`,
+    });
+
+    const zoneNames = zones
+      .filter(z => z.name && z.status === 'UP')
+      .map(z => z.name!);
+
+    // Cache the result
+    if (zoneNames.length > 0) {
+      zonesCache.set(region, zoneNames);
+      return zoneNames;
+    }
+  } catch (error) {
+    console.error(`Failed to fetch zones for region ${region}, using fallback:`, error);
+  }
+  
+  // Fallback to common zones if API call fails or returns empty
+  const fallbackZones = [`${region}-a`, `${region}-b`, `${region}-c`];
+  zonesCache.set(region, fallbackZones);
+  return fallbackZones;
+}
 
 export async function analyzePersistentDisks(
   client: GCPClient
@@ -9,7 +45,7 @@ export async function analyzePersistentDisks(
   const opportunities: SavingsOpportunity[] = [];
 
   // GCP disks are zone-specific
-  const zones = await getZonesInRegion(client.region);
+  const zones = await getZonesInRegion(client, client.region);
 
   for (const zone of zones) {
     try {
@@ -71,14 +107,4 @@ function getDiskPricePerGB(diskType: string): number {
   };
 
   return pricing[diskType] || 0.040; // Default to standard
-}
-
-function getZonesInRegion(region: string): string[] {
-  // Common GCP zones per region
-  return [
-    `${region}-a`,
-    `${region}-b`,
-    `${region}-c`,
-    `${region}-f`,
-  ];
 }

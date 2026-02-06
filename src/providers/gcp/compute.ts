@@ -1,7 +1,43 @@
 import { GCPClient } from './client';
 import { SavingsOpportunity } from '../../types/opportunity';
 import { getGCEMonthlyCost } from '../../analyzers/cost-estimator';
+import { ZonesClient } from '@google-cloud/compute';
 import dayjs from 'dayjs';
+
+// Cache zones per region to avoid repeated API calls
+const zonesCache = new Map<string, string[]>();
+
+async function getZonesInRegion(client: GCPClient, region: string): Promise<string[]> {
+  // Check cache first
+  if (zonesCache.has(region)) {
+    return zonesCache.get(region)!;
+  }
+
+  try {
+    const zonesClient = new ZonesClient();
+    const [zones] = await zonesClient.list({
+      project: client.projectId,
+      filter: `name:${region}-*`,
+    });
+
+    const zoneNames = zones
+      .filter(z => z.name && z.status === 'UP')
+      .map(z => z.name!);
+
+    // Cache the result
+    if (zoneNames.length > 0) {
+      zonesCache.set(region, zoneNames);
+      return zoneNames;
+    }
+  } catch (error) {
+    console.error(`Failed to fetch zones for region ${region}, using fallback:`, error);
+  }
+  
+  // Fallback to common zones if API call fails or returns empty
+  const fallbackZones = [`${region}-a`, `${region}-b`, `${region}-c`];
+  zonesCache.set(region, fallbackZones);
+  return fallbackZones;
+}
 
 interface GCEMetrics {
   cpu: number;
@@ -22,7 +58,7 @@ export async function analyzeGCEInstances(
   const opportunities: SavingsOpportunity[] = [];
 
   // GCP instances are zone-specific, so we need to check multiple zones
-  const zones = await getZonesInRegion(client.region);
+  const zones = await getZonesInRegion(client, client.region);
 
   for (const zone of zones) {
     const [instances] = await computeClient.list({
@@ -32,15 +68,15 @@ export async function analyzeGCEInstances(
     });
 
     for await (const instance of instances) {
-      if (!instance.name || !instance.machineType) continue;
+      if (!instance.name || !instance.machineType || !instance.id) continue;
 
       // Extract machine type from full URL
       const machineType = instance.machineType.split('/').pop() || '';
 
-      // Get metrics based on mode
+      // Get metrics based on mode (use instance.id which is the numeric ID)
       const metrics = detailedMetrics
-        ? await getDetailedMetrics(monitoringClient, client.projectId, instance.name, zone, 30)
-        : await getBasicMetrics(monitoringClient, client.projectId, instance.name, zone, 30);
+        ? await getDetailedMetrics(monitoringClient, client.projectId, instance.id.toString(), zone, 30)
+        : await getBasicMetrics(monitoringClient, client.projectId, instance.id.toString(), zone, 30);
 
       // Determine if instance is idle/underutilized
       const isIdle = metrics.cpu < 5;
@@ -150,11 +186,11 @@ export async function analyzeGCEInstances(
 async function getBasicMetrics(
   monitoringClient: any,
   projectId: string,
-  instanceName: string,
+  instanceId: string,
   zone: string,
   days: number
 ): Promise<GCEMetrics> {
-  const cpu = await getAvgCPU(monitoringClient, projectId, instanceName, zone, days);
+  const cpu = await getAvgCPU(monitoringClient, projectId, instanceId, zone, days);
   return { cpu };
 }
 
@@ -162,7 +198,7 @@ async function getBasicMetrics(
 async function getDetailedMetrics(
   monitoringClient: any,
   projectId: string,
-  instanceName: string,
+  instanceId: string,
   zone: string,
   days: number
 ): Promise<GCEMetrics> {
@@ -199,13 +235,16 @@ async function getDetailedMetrics(
           name: `projects/${projectId}`,
           filter: 
             `metric.type="${metricType}" ` +
-            `AND resource.labels.instance_id="${instanceName}" ` +
+            `AND resource.type="gce_instance" ` +
+            `AND resource.labels.instance_id="${instanceId}" ` +
             `AND resource.labels.zone="${zone}"`,
           interval,
           aggregation,
         };
 
         const [timeSeries] = await monitoringClient.listTimeSeries(request);
+
+        console.error(`[GCP Metrics] ${metricType}: ${timeSeries?.length || 0} time series found for instance ${instanceId}`);
 
         if (!timeSeries || timeSeries.length === 0) continue;
 
@@ -223,6 +262,8 @@ async function getDetailedMetrics(
 
         if (count === 0) continue;
         const avg = sum / count;
+
+        console.error(`[GCP Metrics] ${metricType}: avg = ${avg}`);
 
         // Map to metrics object
         switch (metricType) {
@@ -245,17 +286,20 @@ async function getDetailedMetrics(
             metrics.diskWriteOps = avg;
             break;
         }
-      } catch (error) {
+      } catch (error: any) {
         // Some metrics may not be available, continue with others
+        console.error(`[GCP Metrics] Error fetching ${metricType}:`, error.message || error);
         continue;
       }
     }
+
+    console.error(`[GCP Metrics] Final metrics for instance ${instanceId}:`, JSON.stringify(metrics, null, 2));
 
     return metrics;
   } catch (error) {
     console.error('Error fetching detailed metrics:', error);
     // Fallback to basic metrics
-    const cpu = await getAvgCPU(monitoringClient, projectId, instanceName, zone, days);
+    const cpu = await getAvgCPU(monitoringClient, projectId, instanceId, zone, days);
     return { cpu };
   }
 }
@@ -263,7 +307,7 @@ async function getDetailedMetrics(
 async function getAvgCPU(
   monitoringClient: any,
   projectId: string,
-  instanceName: string,
+  instanceId: string,
   zone: string,
   days: number
 ): Promise<number> {
@@ -275,7 +319,8 @@ async function getAvgCPU(
       name: `projects/${projectId}`,
       filter: 
         `metric.type="compute.googleapis.com/instance/cpu/utilization" ` +
-        `AND resource.labels.instance_id="${instanceName}" ` +
+        `AND resource.type="gce_instance" ` +
+        `AND resource.labels.instance_id="${instanceId}" ` +
         `AND resource.labels.zone="${zone}"`,
       interval: {
         startTime: {
@@ -348,15 +393,4 @@ function buildDetailedRecommendation(
   } else {
     return `Low utilization (${metricsSummary}) - consider downsizing to smaller machine type`;
   }
-}
-
-function getZonesInRegion(region: string): string[] {
-  // Common GCP zones per region (a, b, c, f)
-  // In a production app, you'd query this dynamically via Compute API
-  return [
-    `${region}-a`,
-    `${region}-b`,
-    `${region}-c`,
-    `${region}-f`,
-  ];
 }
