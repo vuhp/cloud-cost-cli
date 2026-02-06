@@ -483,28 +483,94 @@ async function scanAWS(options: ScanCommandOptions) {
 }
 
 async function scanAzure(options: ScanCommandOptions) {
+  let allOpportunities: SavingsOpportunity[] = [];
+  let scannedLocations: string[] = [];
+
+  if (options.allRegions) {
+    info('Scanning all Azure locations...');
+    info('This may take a few minutes...\n');
+
+    const locations = [
+      'eastus', 'eastus2', 'westus', 'westus2', 'centralus',
+      'westeurope', 'northeurope', 'uksouth', 'ukwest',
+      'southeastasia', 'eastasia', 'australiaeast',
+    ];
+    
+    info(`Scanning ${locations.length} locations: ${locations.join(', ')}\n`);
+
+    for (const location of locations) {
+      try {
+        info(`Scanning location: ${location}...`);
+        const opportunities = await scanSingleLocationAzure(location, options);
+        
+        if (opportunities && opportunities.length > 0) {
+          success(`✓ ${location}: Found ${opportunities.length} opportunities`);
+          scannedLocations.push(location);
+          allOpportunities.push(...opportunities);
+        }
+      } catch (err: any) {
+        info(`⚠️  Skipped ${location}: ${err.message}`);
+      }
+    }
+
+    success(`\n✓ Completed multi-location scan across ${scannedLocations.length} locations`);
+    
+    // Output multi-location results
+    const totalPotentialSavings = allOpportunities.reduce((sum, opp) => sum + opp.estimatedSavings, 0);
+    const report: ScanReport = {
+      opportunities: allOpportunities,
+      totalPotentialSavings,
+      summary: {
+        totalResources: allOpportunities.length,
+        idleResources: allOpportunities.filter((o) => o.category === 'idle').length,
+        oversizedResources: allOpportunities.filter((o) => o.category === 'oversized').length,
+        unusedResources: allOpportunities.filter((o) => o.category === 'unused').length,
+      },
+      provider: 'azure',
+      accountId: options.subscriptionId || 'unknown',
+      region: `multi-location (${scannedLocations.length} locations)`,
+      scanPeriod: { start: new Date(), end: new Date() },
+    };
+
+    // Handle output format
+    if (options.output === 'json') {
+      renderJSON(report);
+    } else {
+      await renderTable(report, parseInt(options.top || '10'));
+    }
+    return;
+  }
+
+  // Single location scan - delegate to scanSingleLocationAzure which handles all output
+  await scanSingleLocationAzure(options.location, options);
+}
+
+async function scanSingleLocationAzure(location: string | undefined, options: ScanCommandOptions) {
   const client = new AzureClient({
     subscriptionId: options.subscriptionId,
-    location: options.location,
+    location: location,
   });
 
-  info(`Scanning Azure subscription (${client.subscriptionId})...`);
-  if (client.location) {
-    info(`Filtering resources by location: ${client.location}`);
-  } else {
-    info('Scanning all locations (no filter specified)');
-  }
-  
-  // Test Azure credentials before scanning
-  try {
-    await client.testConnection();
-  } catch (err: any) {
-    error(err.message);
-    process.exit(1);
-  }
-  
-  if (options.accurate) {
-    info('Note: --accurate flag is not yet implemented. Using estimated pricing.');
+  // Only show detailed info for single location scans
+  if (!options.allRegions) {
+    info(`Scanning Azure subscription (${client.subscriptionId})...`);
+    if (client.location) {
+      info(`Filtering resources by location: ${client.location}`);
+    } else {
+      info('Scanning all locations (no filter specified)');
+    }
+    
+    // Test Azure credentials before scanning
+    try {
+      await client.testConnection();
+    } catch (err: any) {
+      error(err.message);
+      process.exit(1);
+    }
+    
+    if (options.accurate) {
+      info('Note: --accurate flag is not yet implemented. Using estimated pricing.');
+    }
   }
 
   // Run analyzers in parallel
@@ -573,6 +639,19 @@ async function scanAzure(options: ScanCommandOptions) {
     ...functionsOpportunities,
     ...cosmosdbOpportunities,
   ];
+
+  // Tag opportunities with location if in multi-location scan
+  if (options.allRegions && location) {
+    const locationTag = `[${location}] `;
+    allOpportunities.forEach(opp => {
+      opp.resourceId = locationTag + opp.resourceId;
+    });
+  }
+
+  // If in multi-location mode, just return the opportunities
+  if (options.allRegions) {
+    return allOpportunities;
+  }
 
   // Filter by minimum savings if specified
   const minSavings = options.minSavings ? parseFloat(options.minSavings) : 0;
@@ -705,21 +784,87 @@ async function scanAzure(options: ScanCommandOptions) {
 }
 
 async function scanGCP(options: ScanCommandOptions) {
+  let allOpportunities: SavingsOpportunity[] = [];
+  let scannedRegions: string[] = [];
+
+  if (options.allRegions) {
+    info('Scanning all GCP regions...');
+    info('This may take a few minutes...\n');
+
+    const regions = [
+      'us-central1', 'us-east1', 'us-west1', 'us-west2',
+      'europe-west1', 'europe-west2', 'europe-west3',
+      'asia-southeast1', 'asia-northeast1', 'asia-east1',
+    ];
+    
+    info(`Scanning ${regions.length} regions: ${regions.join(', ')}\n`);
+
+    for (const region of regions) {
+      try {
+        info(`Scanning region: ${region}...`);
+        const opportunities = await scanSingleRegionGCP(region, options);
+        
+        if (opportunities && opportunities.length > 0) {
+          success(`✓ ${region}: Found ${opportunities.length} opportunities`);
+          scannedRegions.push(region);
+          allOpportunities.push(...opportunities);
+        }
+      } catch (err: any) {
+        info(`⚠️  Skipped ${region}: ${err.message}`);
+      }
+    }
+
+    success(`\n✓ Completed multi-region scan across ${scannedRegions.length} regions`);
+    
+    // Output multi-region results
+    const totalPotentialSavings = allOpportunities.reduce((sum, opp) => sum + opp.estimatedSavings, 0);
+    const report: ScanReport = {
+      opportunities: allOpportunities,
+      totalPotentialSavings,
+      summary: {
+        totalResources: allOpportunities.length,
+        idleResources: allOpportunities.filter((o) => o.category === 'idle').length,
+        oversizedResources: allOpportunities.filter((o) => o.category === 'oversized').length,
+        unusedResources: allOpportunities.filter((o) => o.category === 'unused').length,
+      },
+      provider: 'gcp',
+      accountId: options.projectId || 'unknown',
+      region: `multi-region (${scannedRegions.length} regions)`,
+      scanPeriod: { start: new Date(), end: new Date() },
+    };
+
+    // Handle output format
+    if (options.output === 'json') {
+      renderJSON(report);
+    } else {
+      await renderTable(report, parseInt(options.top || '10'));
+    }
+    return;
+  }
+
+  // Single region scan
+  await scanSingleRegionGCP(options.region, options);
+}
+
+async function scanSingleRegionGCP(region: string | undefined, options: ScanCommandOptions) {
   const client = new GCPClient({
     projectId: options.projectId,
-    region: options.region,
+    region: region,
   });
 
-  info(`Scanning GCP project (${client.projectId}, region: ${client.region})...`);
+  // Only show detailed info for single region scans
+  if (!options.allRegions) {
+    info(`Scanning GCP project (${client.projectId}, region: ${client.region})...`);
 
-  // Test connection before scanning
-  info('Testing GCP credentials...');
-  try {
-    await client.testConnection();
-    success('GCP credentials verified ✓');
-  } catch (err: any) {
-    error(err.message);
-    process.exit(1);
+    // Test connection before scanning
+    info('Testing GCP credentials...');
+    try {
+      await client.testConnection();
+      success('GCP credentials verified ✓');
+    } catch (err: any) {
+      error(err.message);
+      process.exit(1);
+    }
   }
 
   // Run analyzers in parallel
@@ -774,6 +919,19 @@ async function scanGCP(options: ScanCommandOptions) {
     ...ipsOpportunities,
     ...lbOpportunities,
   ];
+
+  // Tag opportunities with region if in multi-region scan
+  if (options.allRegions && region) {
+    const regionTag = `[${region}] `;
+    allOpportunities.forEach(opp => {
+      opp.resourceId = regionTag + opp.resourceId;
+    });
+  }
+
+  // If in multi-region mode, just return the opportunities
+  if (options.allRegions) {
+    return allOpportunities;
+  }
 
   // Filter by minimum savings if specified
   const minSavings = options.minSavings ? parseFloat(options.minSavings) : 0;
