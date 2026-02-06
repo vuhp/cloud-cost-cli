@@ -85,7 +85,14 @@ export async function runScan(
               analyzeCloudWatchLogs(client),
             ]);
 
-            results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
+            // Tag opportunities with region
+            const regionTag = `[${r}] `;
+            results.forEach((result: SavingsOpportunity[]) => {
+              result.forEach(opp => {
+                opp.resourceId = regionTag + opp.resourceId;
+              });
+              opportunities.push(...result);
+            });
             console.error(`[AWS] ${r}: Found ${opportunities.length} total opportunities so far`);
           } catch (error: any) {
             console.error(`[AWS] Skipped ${r}: ${error.message}`);
@@ -147,7 +154,14 @@ export async function runScan(
               analyzeCosmosDB(client),
             ]);
 
-            results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
+            // Tag opportunities with location
+            const locationTag = `[${loc}] `;
+            results.forEach((result: SavingsOpportunity[]) => {
+              result.forEach(opp => {
+                opp.resourceId = locationTag + opp.resourceId;
+              });
+              opportunities.push(...result);
+            });
             console.error(`[Azure] ${loc}: Found ${opportunities.length} total opportunities so far`);
           } catch (error: any) {
             console.error(`[Azure] Skipped ${loc}: ${error.message}`);
@@ -201,7 +215,14 @@ export async function runScan(
               analyzePersistentDisks(client),
             ]);
 
-            results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
+            // Tag opportunities with region
+            const regionTag = `[${r}] `;
+            results.forEach((result: SavingsOpportunity[]) => {
+              result.forEach(opp => {
+                opp.resourceId = regionTag + opp.resourceId;
+              });
+              opportunities.push(...result);
+            });
             console.error(`[GCP] ${r}: Found ${opportunities.length} total opportunities so far`);
           } catch (error: any) {
             console.error(`[GCP] Skipped ${r}: ${error.message}`);
