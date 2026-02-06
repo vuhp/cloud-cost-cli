@@ -51,71 +51,179 @@ export async function runScan(
       return generateMockScanResult(provider);
     }
 
+    // Empty region means "all regions"
+    const scanAllRegions = !region || region === '';
+
     if (provider === 'aws') {
-      // Use provided credentials or fall back to environment/CLI
-      const clientConfig: any = { region: region || 'us-east-1' };
-      if (credentials) {
-        clientConfig.credentials = {
-          accessKeyId: credentials.accessKeyId,
-          secretAccessKey: credentials.secretAccessKey,
-        };
+      if (scanAllRegions) {
+        // Scan all AWS regions
+        console.error('[AWS] Scanning all enabled regions...');
+        const regions = await AWSClient.getAllRegionsStatic();
+        console.error(`[AWS] Found ${regions.length} enabled regions`);
+
+        for (const r of regions) {
+          try {
+            console.error(`[AWS] Scanning region: ${r}`);
+            const clientConfig: any = { region: r };
+            if (credentials) {
+              clientConfig.credentials = {
+                accessKeyId: credentials.accessKeyId,
+                secretAccessKey: credentials.secretAccessKey,
+              };
+            }
+            const client = new AWSClient(clientConfig);
+
+            const results = await Promise.all([
+              analyzeEC2Instances(client, detailedMetrics),
+              analyzeEBSVolumes(client),
+              analyzeRDSInstances(client),
+              analyzeElastiCache(client),
+              analyzeS3Buckets(client),
+              analyzeLambdaFunctions(client),
+              analyzeDynamoDBTables(client),
+              analyzeSnapshots(client),
+              analyzeCloudWatchLogs(client),
+            ]);
+
+            results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
+            console.error(`[AWS] ${r}: Found ${opportunities.length} total opportunities so far`);
+          } catch (error: any) {
+            console.error(`[AWS] Skipped ${r}: ${error.message}`);
+          }
+        }
+      } else {
+        // Single region scan
+        const clientConfig: any = { region };
+        if (credentials) {
+          clientConfig.credentials = {
+            accessKeyId: credentials.accessKeyId,
+            secretAccessKey: credentials.secretAccessKey,
+          };
+        }
+        const client = new AWSClient(clientConfig);
+
+        const results = await Promise.all([
+          analyzeEC2Instances(client, detailedMetrics),
+          analyzeEBSVolumes(client),
+          analyzeRDSInstances(client),
+          analyzeElastiCache(client),
+          analyzeS3Buckets(client),
+          analyzeLambdaFunctions(client),
+          analyzeDynamoDBTables(client),
+          analyzeSnapshots(client),
+          analyzeCloudWatchLogs(client),
+        ]);
+
+        results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
       }
-      const client = new AWSClient(clientConfig);
-
-      // Run all AWS analyzers in parallel
-      const results = await Promise.all([
-        analyzeEC2Instances(client, detailedMetrics),
-        analyzeEBSVolumes(client),
-        analyzeRDSInstances(client),
-        analyzeElastiCache(client),
-        analyzeS3Buckets(client),
-        analyzeLambdaFunctions(client),
-        analyzeDynamoDBTables(client),
-        analyzeSnapshots(client),
-        analyzeCloudWatchLogs(client),
-      ]);
-
-      results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
     } else if (provider === 'azure') {
-      // Use provided credentials or fall back to Azure CLI
-      const clientConfig: any = { location: region };
-      if (credentials) {
-        clientConfig.subscriptionId = credentials.subscriptionId;
-        clientConfig.tenantId = credentials.tenantId;
-        clientConfig.clientId = credentials.clientId;
-        clientConfig.clientSecret = credentials.clientSecret;
+      // Azure locations for all-regions scan
+      const allLocations = [
+        'eastus', 'eastus2', 'westus', 'westus2', 'centralus',
+        'westeurope', 'northeurope', 'uksouth', 'ukwest',
+        'southeastasia', 'eastasia', 'australiaeast',
+      ];
+
+      if (scanAllRegions) {
+        console.error('[Azure] Scanning all locations...');
+        for (const loc of allLocations) {
+          try {
+            console.error(`[Azure] Scanning location: ${loc}`);
+            const clientConfig: any = { location: loc };
+            if (credentials) {
+              clientConfig.subscriptionId = credentials.subscriptionId;
+              clientConfig.tenantId = credentials.tenantId;
+              clientConfig.clientId = credentials.clientId;
+              clientConfig.clientSecret = credentials.clientSecret;
+            }
+            const client = new AzureClient(clientConfig);
+
+            const results = await Promise.all([
+              analyzeAzureVMs(client, detailedMetrics),
+              analyzeAzureDisks(client),
+              analyzeAzureStorage(client),
+              analyzeAzureSQL(client),
+              analyzeAzureFunctions(client),
+              analyzeCosmosDB(client),
+            ]);
+
+            results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
+            console.error(`[Azure] ${loc}: Found ${opportunities.length} total opportunities so far`);
+          } catch (error: any) {
+            console.error(`[Azure] Skipped ${loc}: ${error.message}`);
+          }
+        }
+      } else {
+        const clientConfig: any = { location: region };
+        if (credentials) {
+          clientConfig.subscriptionId = credentials.subscriptionId;
+          clientConfig.tenantId = credentials.tenantId;
+          clientConfig.clientId = credentials.clientId;
+          clientConfig.clientSecret = credentials.clientSecret;
+        }
+        const client = new AzureClient(clientConfig);
+
+        const results = await Promise.all([
+          analyzeAzureVMs(client, detailedMetrics),
+          analyzeAzureDisks(client),
+          analyzeAzureStorage(client),
+          analyzeAzureSQL(client),
+          analyzeAzureFunctions(client),
+          analyzeCosmosDB(client),
+        ]);
+
+        results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
       }
-      const client = new AzureClient(clientConfig);
-
-      // Run all Azure analyzers in parallel
-      const results = await Promise.all([
-        analyzeAzureVMs(client, detailedMetrics),
-        analyzeAzureDisks(client),
-        analyzeAzureStorage(client),
-        analyzeAzureSQL(client),
-        analyzeAzureFunctions(client),
-        analyzeCosmosDB(client),
-      ]);
-
-      results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
     } else if (provider === 'gcp') {
-      // Use provided credentials or fall back to gcloud CLI
-      const clientConfig: any = { region: region || 'us-central1' };
-      if (credentials) {
-        clientConfig.projectId = credentials.projectId;
-        clientConfig.keyFile = credentials.keyFile; // Path to service account JSON
+      // GCP regions for all-regions scan
+      const allGCPRegions = [
+        'us-central1', 'us-east1', 'us-west1', 'us-west2',
+        'europe-west1', 'europe-west2', 'europe-west3',
+        'asia-southeast1', 'asia-northeast1', 'asia-east1',
+      ];
+
+      if (scanAllRegions) {
+        console.error('[GCP] Scanning all regions...');
+        for (const r of allGCPRegions) {
+          try {
+            console.error(`[GCP] Scanning region: ${r}`);
+            const clientConfig: any = { region: r };
+            if (credentials) {
+              clientConfig.projectId = credentials.projectId;
+              clientConfig.keyFile = credentials.keyFile;
+            }
+            const client = new GCPClient(clientConfig);
+
+            const results = await Promise.all([
+              analyzeGCEInstances(client, detailedMetrics),
+              analyzeGCSBuckets(client),
+              analyzeCloudSQLInstances(client),
+              analyzePersistentDisks(client),
+            ]);
+
+            results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
+            console.error(`[GCP] ${r}: Found ${opportunities.length} total opportunities so far`);
+          } catch (error: any) {
+            console.error(`[GCP] Skipped ${r}: ${error.message}`);
+          }
+        }
+      } else {
+        const clientConfig: any = { region: region || 'us-central1' };
+        if (credentials) {
+          clientConfig.projectId = credentials.projectId;
+          clientConfig.keyFile = credentials.keyFile;
+        }
+        const client = new GCPClient(clientConfig);
+
+        const results = await Promise.all([
+          analyzeGCEInstances(client, detailedMetrics),
+          analyzeGCSBuckets(client),
+          analyzeCloudSQLInstances(client),
+          analyzePersistentDisks(client),
+        ]);
+
+        results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
       }
-      const client = new GCPClient(clientConfig);
-
-      // Run all GCP analyzers in parallel
-      const results = await Promise.all([
-        analyzeGCEInstances(client, detailedMetrics),
-        analyzeGCSBuckets(client),
-        analyzeCloudSQLInstances(client),
-        analyzePersistentDisks(client),
-      ]);
-
-      results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
     } else {
       throw new Error(`Unsupported provider: ${provider}`);
     }
