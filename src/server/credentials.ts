@@ -1,7 +1,31 @@
 import { db } from './db.js';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
+const CONFIG_DIR = path.join(os.homedir(), '.cloud-cost-cli');
+const KEY_FILE = path.join(CONFIG_DIR, 'encryption.key');
+
+// Ensure config directory exists
+if (!fs.existsSync(CONFIG_DIR)) {
+  fs.mkdirSync(CONFIG_DIR, { recursive: true });
+}
+
+// Get or create persistent encryption key
+function getEncryptionKey(): string {
+  if (fs.existsSync(KEY_FILE)) {
+    // Read existing key
+    return fs.readFileSync(KEY_FILE, 'utf8').trim();
+  } else {
+    // Generate new key and save it
+    const key = crypto.randomBytes(32).toString('hex');
+    fs.writeFileSync(KEY_FILE, key, { mode: 0o600 }); // Owner read/write only
+    return key;
+  }
+}
+
+const ENCRYPTION_KEY = getEncryptionKey();
 const ALGORITHM = 'aes-256-gcm';
 
 interface CloudCredentials {
