@@ -104,13 +104,13 @@ app.get('/api/scans/:id', (req: Request, res: Response) => {
     const idParam = req.params.id;
     const scanId = parseInt(typeof idParam === 'string' ? idParam : idParam[0]);
     const scan = getScan(scanId);
-    
+
     if (!scan) {
       return res.status(404).json({ error: 'Scan not found' });
     }
 
     const opportunities = getOpportunities(scanId);
-    
+
     res.json({
       ...scan,
       opportunities,
@@ -132,7 +132,7 @@ app.post('/api/scans', async (req: Request, res: Response) => {
     // Get credentials if credentialsId provided, or use latest for provider
     let credentials: Record<string, string> | undefined;
     let actualCredentialsId: number | undefined = credentialsId;
-    
+
     if (credentialsId) {
       const creds = getCredentials(credentialsId);
       if (!creds) {
@@ -175,21 +175,23 @@ app.post('/api/scans', async (req: Request, res: Response) => {
         updateScanStatus(scanId, 'completed', {
           totalSavings: result.totalSavings,
           opportunityCount: result.opportunities.length,
+          warnings: result.warnings,
         });
         saveOpportunities(scanId, result.opportunities);
-        
+
         broadcast({
           type: 'scan_completed',
           scanId,
           totalSavings: result.totalSavings,
           opportunityCount: result.opportunities.length,
+          warnings: result.warnings,
         });
       })
       .catch((error) => {
         updateScanStatus(scanId, 'failed', {
           errorMessage: error.message,
         });
-        
+
         broadcast({
           type: 'scan_failed',
           scanId,
@@ -219,11 +221,11 @@ app.get('/api/credentials', (req: Request, res: Response) => {
 app.post('/api/credentials', (req: Request, res: Response) => {
   try {
     const { provider, name, credentials } = req.body;
-    
+
     if (!provider || !name || !credentials) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
-    
+
     const id = saveCredentials({ provider, name, credentials });
     res.json({ id, message: 'Credentials saved successfully' });
   } catch (error: any) {
@@ -250,7 +252,7 @@ const dashboardPath = path.join(__dirname, '../../dashboard/dist');
 import { existsSync } from 'fs';
 if (existsSync(dashboardPath)) {
   app.use(express.static(dashboardPath));
-  
+
   // Catch-all route for React Router (must be LAST, after all API routes)
   // Use a function handler without specific path pattern to avoid path-to-regexp issues
   app.use((req: Request, res: Response, next) => {
@@ -278,7 +280,7 @@ if (existsSync(dashboardPath)) {
 export function startDashboardServer() {
   server.listen(PORT, () => {
     console.log(`Dashboard server running at http://localhost:${PORT}`);
-    
+
     // Open browser automatically
     const open = async () => {
       try {
@@ -288,7 +290,7 @@ export function startDashboardServer() {
         console.log('Could not auto-open browser. Please visit http://localhost:9090');
       }
     };
-    
+
     open();
   });
 

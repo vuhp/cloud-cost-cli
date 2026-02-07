@@ -35,7 +35,7 @@ export async function analyzeAzureVMs(
 
       const vmSize = vm.hardwareProfile?.vmSize || 'Unknown';
       const powerState = await getVMPowerState(computeClient, vm);
-      
+
       // Skip stopped/deallocated VMs (no compute cost)
       if (powerState === 'stopped' || powerState === 'deallocated') {
         continue;
@@ -170,8 +170,7 @@ export async function analyzeAzureVMs(
 
     return opportunities;
   } catch (error) {
-    console.error('Error analyzing Azure VMs:', error);
-    return opportunities;
+    throw error;
   }
 }
 
@@ -293,7 +292,7 @@ async function getAverageCPU(
     });
 
     const timeseries = metrics.value?.[0]?.timeseries?.[0]?.data || [];
-    
+
     if (timeseries.length === 0) {
       return 0;
     }
@@ -320,9 +319,9 @@ function buildDetailedRecommendation(
   isIdle: boolean
 ): string {
   const parts = [];
-  
+
   parts.push(`CPU: ${metrics.cpu.toFixed(1)}%`);
-  
+
   if (metrics.memoryAvailable !== undefined) {
     const totalMemoryGB = getVMMemoryGB(vmSize);
     if (totalMemoryGB > 0) {
@@ -336,19 +335,19 @@ function buildDetailedRecommendation(
       parts.push(`Memory Available: ${memoryGB} GB`);
     }
   }
-  
+
   if (metrics.networkIn !== undefined && metrics.networkOut !== undefined) {
     const totalMB = ((metrics.networkIn + metrics.networkOut) / 1024 / 1024).toFixed(1);
     parts.push(`Network: ${totalMB} MB/s`);
   }
-  
+
   if (metrics.diskReadOps !== undefined && metrics.diskWriteOps !== undefined) {
     const totalIOPS = (metrics.diskReadOps + metrics.diskWriteOps).toFixed(0);
     parts.push(`Disk: ${totalIOPS} IOPS`);
   }
 
   const metricsSummary = parts.join(' | ');
-  
+
   if (isIdle) {
     return `VM is idle (${metricsSummary}) - consider stopping or terminating`;
   } else {
@@ -370,7 +369,7 @@ function getVMMemoryGB(vmSize: string): number {
     'Standard_B12ms': 48,
     'Standard_B16ms': 64,
     'Standard_B20ms': 80,
-    
+
     // D-series v3 (General purpose)
     'Standard_D2s_v3': 8,
     'Standard_D4s_v3': 16,
@@ -379,7 +378,7 @@ function getVMMemoryGB(vmSize: string): number {
     'Standard_D32s_v3': 128,
     'Standard_D48s_v3': 192,
     'Standard_D64s_v3': 256,
-    
+
     // D-series v4 (General purpose)
     'Standard_D2s_v4': 8,
     'Standard_D4s_v4': 16,
@@ -388,7 +387,7 @@ function getVMMemoryGB(vmSize: string): number {
     'Standard_D32s_v4': 128,
     'Standard_D48s_v4': 192,
     'Standard_D64s_v4': 256,
-    
+
     // D-series v5 (General purpose)
     'Standard_D2s_v5': 8,
     'Standard_D4s_v5': 16,
@@ -398,7 +397,7 @@ function getVMMemoryGB(vmSize: string): number {
     'Standard_D48s_v5': 192,
     'Standard_D64s_v5': 256,
     'Standard_D96s_v5': 384,
-    
+
     // E-series v3 (Memory optimized)
     'Standard_E2s_v3': 16,
     'Standard_E4s_v3': 32,
@@ -408,7 +407,7 @@ function getVMMemoryGB(vmSize: string): number {
     'Standard_E32s_v3': 256,
     'Standard_E48s_v3': 384,
     'Standard_E64s_v3': 432,
-    
+
     // E-series v4 (Memory optimized)
     'Standard_E2s_v4': 16,
     'Standard_E4s_v4': 32,
@@ -418,7 +417,7 @@ function getVMMemoryGB(vmSize: string): number {
     'Standard_E32s_v4': 256,
     'Standard_E48s_v4': 384,
     'Standard_E64s_v4': 504,
-    
+
     // E-series v5 (Memory optimized)
     'Standard_E2s_v5': 16,
     'Standard_E4s_v5': 32,
@@ -429,7 +428,7 @@ function getVMMemoryGB(vmSize: string): number {
     'Standard_E48s_v5': 384,
     'Standard_E64s_v5': 512,
     'Standard_E96s_v5': 672,
-    
+
     // F-series v2 (Compute optimized)
     'Standard_F2s_v2': 4,
     'Standard_F4s_v2': 8,

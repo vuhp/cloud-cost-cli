@@ -107,8 +107,7 @@ export async function analyzeDynamoDBTables(
 
     return opportunities;
   } catch (error: any) {
-    console.error('Error analyzing DynamoDB tables:', error.message);
-    return opportunities;
+    throw error;
   }
 }
 

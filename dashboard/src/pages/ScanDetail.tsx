@@ -9,6 +9,7 @@ export default function ScanDetail() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [search, setSearch] = useState('');
+  const [isWarningsExpanded, setIsWarningsExpanded] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -87,6 +88,48 @@ export default function ScanDetail() {
         </div>
       </div>
 
+      {/* Warnings Banner */}
+      {scan.warnings && (() => {
+        try {
+          const warnings = JSON.parse(scan.warnings) as string[];
+          if (warnings.length > 0) {
+            return (
+              <div className="mb-6 bg-yellow-900/30 border border-yellow-600/50 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-yellow-400 text-xl">⚠️</span>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="font-medium text-yellow-300">
+                        {warnings.length} analyzers encountered permission issues
+                      </div>
+                      <button
+                        onClick={() => setIsWarningsExpanded(!isWarningsExpanded)}
+                        className="text-xs bg-yellow-900/50 hover:bg-yellow-900 text-yellow-200 px-2 py-1 rounded border border-yellow-700 transition-colors cursor-pointer"
+                      >
+                        {isWarningsExpanded ? 'Hide Details' : 'Show Details'}
+                      </button>
+                    </div>
+
+                    {isWarningsExpanded && (
+                      <div className="mt-3 max-h-60 overflow-y-auto pr-2">
+                        <ul className="text-sm text-yellow-200/80 space-y-1">
+                          {warnings.map((w, i) => (
+                            <li key={i}>• {w}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+        } catch {
+          // Invalid JSON, ignore
+        }
+        return null;
+      })()}
+
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
@@ -141,7 +184,7 @@ export default function ScanDetail() {
           <div className="divide-y divide-slate-700">
             {filteredOpportunities.map((opp) => {
               const { region, cleanId } = extractRegion(opp.resource_id);
-              
+
               return (
                 <div key={opp.id} className="p-6 hover:bg-slate-700/30 transition-colors">
                   <div className="flex items-start justify-between mb-3">

@@ -18,13 +18,13 @@ export async function analyzeCloudWatchLogs(
 
   try {
     let nextToken: string | undefined;
-    
+
     do {
       const command = new DescribeLogGroupsCommand({
         nextToken,
         limit: 50,
       });
-      
+
       const response = await logsClient.send(command);
       nextToken = response.nextToken;
 
@@ -41,7 +41,7 @@ export async function analyzeCloudWatchLogs(
         const creationTime = logGroup.creationTime;
 
         // Calculate age in days
-        const ageInDays = creationTime 
+        const ageInDays = creationTime
           ? dayjs().diff(dayjs(creationTime), 'day')
           : 0;
 
@@ -132,7 +132,6 @@ export async function analyzeCloudWatchLogs(
 
     return opportunities;
   } catch (error: any) {
-    console.error('Error analyzing CloudWatch Logs:', error.message);
-    return opportunities;
+    throw error;
   }
 }

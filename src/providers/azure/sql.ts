@@ -93,8 +93,7 @@ export async function analyzeAzureSQL(
 
     return opportunities;
   } catch (error) {
-    console.error('Error analyzing Azure SQL:', error);
-    return opportunities;
+    throw error;
   }
 }
 
@@ -116,7 +115,7 @@ async function getAverageDTU(
     });
 
     const timeseries = metrics.value?.[0]?.timeseries?.[0]?.data || [];
-    
+
     if (timeseries.length === 0) {
       return 0;
     }

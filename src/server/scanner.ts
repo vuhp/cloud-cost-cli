@@ -29,10 +29,41 @@ import { analyzeGCEInstances } from '../providers/gcp/compute.js';
 import { analyzeGCSBuckets } from '../providers/gcp/storage.js';
 import { analyzeCloudSQLInstances } from '../providers/gcp/cloudsql.js';
 import { analyzePersistentDisks } from '../providers/gcp/disks.js';
+import { analyzeGKE } from '../providers/gcp/gke.js';
 
 interface ScanResult {
   totalSavings: number;
   opportunities: SavingsOpportunity[];
+  warnings: string[];
+}
+
+/**
+ * Run an analyzer and collect any errors as warnings instead of throwing
+ */
+async function runAnalyzerWithWarning(
+  name: string,
+  analyzerFn: () => Promise<SavingsOpportunity[]>,
+  warnings: string[]
+): Promise<SavingsOpportunity[]> {
+  try {
+    return await analyzerFn();
+  } catch (error: any) {
+    const msg = error.message || String(error);
+    // Check for permission-related errors
+    if (msg.includes('AccessDenied') ||
+      msg.includes('UnauthorizedOperation') ||
+      msg.includes('permission') ||
+      msg.includes('forbidden') ||
+      msg.includes('not authorized') ||
+      msg.includes('403')) {
+      warnings.push(`${name}: Permission denied - ${msg}`);
+    } else if (msg.includes('API') && msg.includes('not enabled')) {
+      warnings.push(`${name}: API not enabled - ${msg}`);
+    } else {
+      warnings.push(`${name}: ${msg}`);
+    }
+    return [];
+  }
 }
 
 export async function runScan(
@@ -43,6 +74,7 @@ export async function runScan(
   detailedMetrics: boolean = false
 ): Promise<ScanResult> {
   const opportunities: SavingsOpportunity[] = [];
+  const warnings: string[] = [];
 
   try {
     // Check for demo mode (environment variable)
@@ -57,7 +89,7 @@ export async function runScan(
     if (provider === 'aws') {
       // Get AWS account ID from first client
       let awsAccountId: string | undefined;
-      
+
       if (scanAllRegions) {
         // Scan all AWS regions
         console.error('[AWS] Scanning all enabled regions...');
@@ -85,15 +117,15 @@ export async function runScan(
             }
 
             const results = await Promise.all([
-              analyzeEC2Instances(client, detailedMetrics),
-              analyzeEBSVolumes(client),
-              analyzeRDSInstances(client),
-              analyzeElastiCache(client),
-              analyzeS3Buckets(client),
-              analyzeLambdaFunctions(client),
-              analyzeDynamoDBTables(client),
-              analyzeSnapshots(client),
-              analyzeCloudWatchLogs(client),
+              runAnalyzerWithWarning('EC2', () => analyzeEC2Instances(client, detailedMetrics), warnings),
+              runAnalyzerWithWarning('EBS', () => analyzeEBSVolumes(client), warnings),
+              runAnalyzerWithWarning('RDS', () => analyzeRDSInstances(client), warnings),
+              runAnalyzerWithWarning('ElastiCache', () => analyzeElastiCache(client), warnings),
+              runAnalyzerWithWarning('S3', () => analyzeS3Buckets(client), warnings),
+              runAnalyzerWithWarning('Lambda', () => analyzeLambdaFunctions(client), warnings),
+              runAnalyzerWithWarning('DynamoDB', () => analyzeDynamoDBTables(client), warnings),
+              runAnalyzerWithWarning('Snapshots', () => analyzeSnapshots(client), warnings),
+              runAnalyzerWithWarning('CloudWatch Logs', () => analyzeCloudWatchLogs(client), warnings),
             ]);
 
             // Tag opportunities with region
@@ -126,15 +158,15 @@ export async function runScan(
         updateScanAccountId(scanId, awsAccountId);
 
         const results = await Promise.all([
-          analyzeEC2Instances(client, detailedMetrics),
-          analyzeEBSVolumes(client),
-          analyzeRDSInstances(client),
-          analyzeElastiCache(client),
-          analyzeS3Buckets(client),
-          analyzeLambdaFunctions(client),
-          analyzeDynamoDBTables(client),
-          analyzeSnapshots(client),
-          analyzeCloudWatchLogs(client),
+          runAnalyzerWithWarning('EC2', () => analyzeEC2Instances(client, detailedMetrics), warnings),
+          runAnalyzerWithWarning('EBS', () => analyzeEBSVolumes(client), warnings),
+          runAnalyzerWithWarning('RDS', () => analyzeRDSInstances(client), warnings),
+          runAnalyzerWithWarning('ElastiCache', () => analyzeElastiCache(client), warnings),
+          runAnalyzerWithWarning('S3', () => analyzeS3Buckets(client), warnings),
+          runAnalyzerWithWarning('Lambda', () => analyzeLambdaFunctions(client), warnings),
+          runAnalyzerWithWarning('DynamoDB', () => analyzeDynamoDBTables(client), warnings),
+          runAnalyzerWithWarning('Snapshots', () => analyzeSnapshots(client), warnings),
+          runAnalyzerWithWarning('CloudWatch Logs', () => analyzeCloudWatchLogs(client), warnings),
         ]);
 
         results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
@@ -162,12 +194,12 @@ export async function runScan(
             const client = new AzureClient(clientConfig);
 
             const results = await Promise.all([
-              analyzeAzureVMs(client, detailedMetrics),
-              analyzeAzureDisks(client),
-              analyzeAzureStorage(client),
-              analyzeAzureSQL(client),
-              analyzeAzureFunctions(client),
-              analyzeCosmosDB(client),
+              runAnalyzerWithWarning('Azure VMs', () => analyzeAzureVMs(client, detailedMetrics), warnings),
+              runAnalyzerWithWarning('Azure Disks', () => analyzeAzureDisks(client), warnings),
+              runAnalyzerWithWarning('Azure Storage', () => analyzeAzureStorage(client), warnings),
+              runAnalyzerWithWarning('Azure SQL', () => analyzeAzureSQL(client), warnings),
+              runAnalyzerWithWarning('Azure Functions', () => analyzeAzureFunctions(client), warnings),
+              runAnalyzerWithWarning('CosmosDB', () => analyzeCosmosDB(client), warnings),
             ]);
 
             // Tag opportunities with location
@@ -194,12 +226,12 @@ export async function runScan(
         const client = new AzureClient(clientConfig);
 
         const results = await Promise.all([
-          analyzeAzureVMs(client, detailedMetrics),
-          analyzeAzureDisks(client),
-          analyzeAzureStorage(client),
-          analyzeAzureSQL(client),
-          analyzeAzureFunctions(client),
-          analyzeCosmosDB(client),
+          runAnalyzerWithWarning('Azure VMs', () => analyzeAzureVMs(client, detailedMetrics), warnings),
+          runAnalyzerWithWarning('Azure Disks', () => analyzeAzureDisks(client), warnings),
+          runAnalyzerWithWarning('Azure Storage', () => analyzeAzureStorage(client), warnings),
+          runAnalyzerWithWarning('Azure SQL', () => analyzeAzureSQL(client), warnings),
+          runAnalyzerWithWarning('Azure Functions', () => analyzeAzureFunctions(client), warnings),
+          runAnalyzerWithWarning('CosmosDB', () => analyzeCosmosDB(client), warnings),
         ]);
 
         results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
@@ -225,10 +257,11 @@ export async function runScan(
             const client = new GCPClient(clientConfig);
 
             const results = await Promise.all([
-              analyzeGCEInstances(client, detailedMetrics),
-              analyzeGCSBuckets(client),
-              analyzeCloudSQLInstances(client),
-              analyzePersistentDisks(client),
+              runAnalyzerWithWarning('GCE Instances', () => analyzeGCEInstances(client, detailedMetrics), warnings),
+              runAnalyzerWithWarning('GCS Buckets', () => analyzeGCSBuckets(client), warnings),
+              runAnalyzerWithWarning('Cloud SQL', () => analyzeCloudSQLInstances(client), warnings),
+              runAnalyzerWithWarning('Persistent Disks', () => analyzePersistentDisks(client), warnings),
+              runAnalyzerWithWarning('GKE', () => analyzeGKE(client, detailedMetrics), warnings),
             ]);
 
             // Tag opportunities with region
@@ -253,10 +286,11 @@ export async function runScan(
         const client = new GCPClient(clientConfig);
 
         const results = await Promise.all([
-          analyzeGCEInstances(client, detailedMetrics),
-          analyzeGCSBuckets(client),
-          analyzeCloudSQLInstances(client),
-          analyzePersistentDisks(client),
+          runAnalyzerWithWarning('GCE Instances', () => analyzeGCEInstances(client, detailedMetrics), warnings),
+          runAnalyzerWithWarning('GCS Buckets', () => analyzeGCSBuckets(client), warnings),
+          runAnalyzerWithWarning('Cloud SQL', () => analyzeCloudSQLInstances(client), warnings),
+          runAnalyzerWithWarning('Persistent Disks', () => analyzePersistentDisks(client), warnings),
+          runAnalyzerWithWarning('GKE', () => analyzeGKE(client, detailedMetrics), warnings),
         ]);
 
         results.forEach((result: SavingsOpportunity[]) => opportunities.push(...result));
@@ -273,26 +307,27 @@ export async function runScan(
     return {
       totalSavings,
       opportunities,
+      warnings,
     };
   } catch (error: any) {
     console.error(`Scan ${scanId} failed:`, error);
-    
+
     // Improve error messages for common issues
     let errorMessage = error.message;
-    
-    if (errorMessage.includes('Compute Engine API has not been used') || 
-        errorMessage.includes('API has not been enabled')) {
+
+    if (errorMessage.includes('Compute Engine API has not been used') ||
+      errorMessage.includes('API has not been enabled')) {
       errorMessage = `API not enabled: ${errorMessage}. Please enable the required APIs in your GCP project.`;
-    } else if (errorMessage.includes('CredentialsError') || 
-               errorMessage.includes('authentication') || 
-               errorMessage.includes('credentials')) {
+    } else if (errorMessage.includes('CredentialsError') ||
+      errorMessage.includes('authentication') ||
+      errorMessage.includes('credentials')) {
       errorMessage = `Authentication failed: ${errorMessage}. Please check your credentials in Settings.`;
-    } else if (errorMessage.includes('permission') || 
-               errorMessage.includes('access denied') || 
-               errorMessage.includes('forbidden')) {
+    } else if (errorMessage.includes('permission') ||
+      errorMessage.includes('access denied') ||
+      errorMessage.includes('forbidden')) {
       errorMessage = `Permission denied: ${errorMessage}. Please ensure your account has the necessary permissions.`;
     }
-    
+
     throw new Error(errorMessage);
   }
 }
@@ -351,5 +386,6 @@ function generateMockScanResult(provider: string): ScanResult {
   return {
     totalSavings,
     opportunities: mockOpportunities,
+    warnings: [],
   };
 }

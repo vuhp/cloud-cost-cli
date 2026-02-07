@@ -226,8 +226,7 @@ export async function analyzeAKS(
 
         return opportunities;
     } catch (error: any) {
-        console.error('Error analyzing AKS:', error.message);
-        return opportunities;
+        throw error;
     }
 }
 

@@ -25,7 +25,7 @@ export async function analyzeElastiCache(
     const command = new DescribeCacheClustersCommand({
       ShowCacheNodeInfo: true,
     });
-    
+
     const response = await elasticacheClient.send(command);
     const clusters = response.CacheClusters || [];
 
@@ -109,8 +109,7 @@ export async function analyzeElastiCache(
 
     return opportunities;
   } catch (error: any) {
-    console.error('Error analyzing ElastiCache:', error.message);
-    return opportunities;
+    throw error;
   }
 }
 
@@ -140,9 +139,9 @@ async function getCPUUtilization(
 
     const response = await cloudwatch.send(command);
     const datapoints = response.Datapoints || [];
-    
+
     if (datapoints.length === 0) return 0;
-    
+
     const avgCPU = datapoints.reduce((sum, dp) => sum + (dp.Average || 0), 0) / datapoints.length;
     return avgCPU;
   } catch (error) {
@@ -208,9 +207,9 @@ async function getCurrentConnections(
 
     const response = await cloudwatch.send(command);
     const datapoints = response.Datapoints || [];
-    
+
     if (datapoints.length === 0) return 0;
-    
+
     const avgConnections = datapoints.reduce((sum, dp) => sum + (dp.Average || 0), 0) / datapoints.length;
     return avgConnections;
   } catch (error) {

@@ -78,7 +78,6 @@ export async function analyzeAzureDisks(
 
     return opportunities;
   } catch (error) {
-    console.error('Error analyzing Azure disks:', error);
-    return opportunities;
+    throw error;
   }
 }

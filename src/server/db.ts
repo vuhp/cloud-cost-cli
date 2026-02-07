@@ -40,7 +40,8 @@ export function initializeSchema() {
       completed_at DATETIME,
       total_savings REAL DEFAULT 0,
       opportunity_count INTEGER DEFAULT 0,
-      error_message TEXT
+      error_message TEXT,
+      warnings TEXT
     );
 
     -- Opportunities table
@@ -69,6 +70,16 @@ export function initializeSchema() {
     CREATE INDEX IF NOT EXISTS idx_opportunities_confidence ON opportunities(confidence);
     CREATE INDEX IF NOT EXISTS idx_opportunities_savings ON opportunities(estimated_savings);
   `);
+
+  // Migration: Add warnings column if it doesn't exist (for existing databases)
+  try {
+    db.exec(`ALTER TABLE scans ADD COLUMN warnings TEXT`);
+  } catch (e: any) {
+    // Column already exists, ignore the error
+    if (!e.message.includes('duplicate column name')) {
+      throw e;
+    }
+  }
 }
 
 // Helper functions
@@ -81,7 +92,7 @@ export function saveScan(data: {
     INSERT INTO scans (provider, region, account_id, status)
     VALUES (?, ?, ?, 'running')
   `);
-  
+
   const result = stmt.run(data.provider, data.region || null, data.accountId || null);
   return result.lastInsertRowid as number;
 }
@@ -93,6 +104,7 @@ export function updateScanStatus(
     totalSavings?: number;
     opportunityCount?: number;
     errorMessage?: string;
+    warnings?: string[];
   }
 ) {
   const stmt = db.prepare(`
@@ -101,15 +113,17 @@ export function updateScanStatus(
         completed_at = CURRENT_TIMESTAMP,
         total_savings = COALESCE(?, total_savings),
         opportunity_count = COALESCE(?, opportunity_count),
-        error_message = ?
+        error_message = ?,
+        warnings = ?
     WHERE id = ?
   `);
-  
+
   stmt.run(
     status,
     data?.totalSavings || null,
     data?.opportunityCount || null,
     data?.errorMessage || null,
+    data?.warnings ? JSON.stringify(data.warnings) : null,
     scanId
   );
 }
@@ -157,7 +171,7 @@ export function getScans(limit: number = 30) {
     ORDER BY started_at DESC
     LIMIT ?
   `);
-  
+
   return stmt.all(limit);
 }
 
@@ -172,13 +186,13 @@ export function getOpportunities(scanId: number) {
     WHERE scan_id = ?
     ORDER BY estimated_savings DESC
   `);
-  
+
   return stmt.all(scanId);
 }
 
 export function getStats() {
   const totalScans = db.prepare('SELECT COUNT(*) as count FROM scans').get() as any;
-  
+
   // Get the most recent scan per provider (not per provider+region)
   // This prevents double-counting when scanning specific regions then all-regions
   const latestSavings = db.prepare(`
@@ -191,7 +205,7 @@ export function getStats() {
       HAVING started_at = MAX(started_at)
     )
   `).get() as any;
-  
+
   const recentScans = db.prepare(`
     SELECT * FROM scans ORDER BY started_at DESC LIMIT 10
   `).all();
@@ -224,6 +238,6 @@ export function getTrendData(days: number = 30) {
     GROUP BY date
     ORDER BY date ASC
   `);
-  
+
   return stmt.all(days);
 }

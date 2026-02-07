@@ -126,13 +126,7 @@ export async function analyzeLambdaFunctions(
 
     return opportunities;
   } catch (error: any) {
-    if (isPermissionError(error)) {
-      console.warn(getPermissionErrorMessage(error, 'Lambda functions'));
-      console.warn('   Continuing with other analyzers...');
-    } else {
-      console.error('Error analyzing Lambda functions:', error.message);
-    }
-    return opportunities;
+    throw error;
   }
 }
 
@@ -249,12 +243,12 @@ function estimateMonthlyCost(
   avgDurationMs: number
 ): number {
   const requestCost = (invocations / 1000000) * 0.20;
-  
+
   const memoryGB = memoryMB / 1024;
   const durationSeconds = avgDurationMs / 1000;
   const gbSeconds = memoryGB * durationSeconds * invocations;
   const computeCost = gbSeconds * 0.0000166667;
-  
+
   // Monthly estimate (30 days worth)
   return requestCost + computeCost;
 }

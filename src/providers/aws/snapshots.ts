@@ -20,7 +20,7 @@ async function getSnapshotCosts(
   snapshotIds: string[]
 ): Promise<Map<string, number>> {
   const costMap = new Map<string, number>();
-  
+
   if (snapshotIds.length === 0) return costMap;
 
   try {
@@ -61,15 +61,15 @@ async function getSnapshotCosts(
     });
 
     const response = await costExplorer.send(command);
-    
+
     if (response.ResultsByTime && response.ResultsByTime.length > 0) {
       const results = response.ResultsByTime[0];
-      
+
       if (results.Groups) {
         for (const group of results.Groups) {
           const resourceId = group.Keys?.[0] || '';
           const cost = parseFloat(group.Metrics?.UnblendedCost?.Amount || '0');
-          
+
           // Extract snapshot ID from resource ARN or ID
           const snapshotMatch = resourceId.match(/snap-[a-z0-9]+/i);
           if (snapshotMatch) {
@@ -97,7 +97,7 @@ export async function analyzeSnapshots(
     const ebsCommand = new DescribeSnapshotsCommand({
       OwnerIds: ['self'], // Only snapshots owned by this account
     });
-    
+
     const ebsResponse = await ec2Client.send(ebsCommand);
     const ebsSnapshots = ebsResponse.Snapshots || [];
 
@@ -111,7 +111,7 @@ export async function analyzeSnapshots(
       const snapshotId = snapshot.SnapshotId;
       const ageInDays = dayjs().diff(dayjs(snapshot.StartTime), 'day');
       const sizeGB = snapshot.VolumeSize || 0;
-      
+
       // Use actual cost from Cost Explorer if available, otherwise estimate
       const actualCost = costMap.get(snapshotId);
       const monthlyCost = actualCost !== undefined ? actualCost : sizeGB * 0.05;
@@ -122,7 +122,7 @@ export async function analyzeSnapshots(
         const recommendation = actualCost !== undefined
           ? `Review old EBS snapshot (${ageInDays} days old, $${monthlyCost.toFixed(2)}/month actual cost). Delete if no longer needed.`
           : `Review old EBS snapshot (${ageInDays} days old, ${sizeGB} GB volume size, ~$${monthlyCost.toFixed(2)}/month estimated). Delete if no longer needed.`;
-        
+
         opportunities.push({
           id: `aws-snapshot-old-ebs-${snapshotId}`,
           provider: 'aws',
@@ -152,7 +152,7 @@ export async function analyzeSnapshots(
         const recommendation = actualCost !== undefined
           ? `Large EBS snapshot ($${monthlyCost.toFixed(2)}/month actual cost). Review if full retention is needed or consolidate with lifecycle policy.`
           : `Large EBS snapshot (${sizeGB} GB volume size, ~$${monthlyCost.toFixed(2)}/month estimated). Review if full retention is needed or consolidate with lifecycle policy.`;
-        
+
         opportunities.push({
           id: `aws-snapshot-large-ebs-${snapshotId}`,
           provider: 'aws',
@@ -181,7 +181,7 @@ export async function analyzeSnapshots(
     const rdsCommand = new DescribeDBSnapshotsCommand({
       SnapshotType: 'manual', // Only manual snapshots (automated are managed)
     });
-    
+
     const rdsResponse = await rdsClient.send(rdsCommand);
     const rdsSnapshots = rdsResponse.DBSnapshots || [];
 
@@ -247,7 +247,6 @@ export async function analyzeSnapshots(
 
     return opportunities;
   } catch (error: any) {
-    console.error('Error analyzing Snapshots:', error.message);
-    return opportunities;
+    throw error;
   }
 }

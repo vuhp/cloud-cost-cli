@@ -35,13 +35,13 @@ export async function analyzeCosmosDB(
       const capabilities = account.capabilities || [];
 
       // Check if serverless
-      const isServerless = capabilities.some((cap: any) => 
+      const isServerless = capabilities.some((cap: any) =>
         cap.name === 'EnableServerless'
       );
 
       // Get databases for this account
       const resourceGroup = account.id.split('/')[4];
-      
+
       try {
         const databases = [];
         for await (const db of cosmosClient.sqlResources.listSqlDatabases(resourceGroup, accountName)) {
@@ -159,8 +159,7 @@ export async function analyzeCosmosDB(
 
     return opportunities;
   } catch (error: any) {
-    console.error('Error analyzing CosmosDB:', error.message);
-    return opportunities;
+    throw error;
   }
 }
 

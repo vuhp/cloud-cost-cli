@@ -67,6 +67,25 @@ interface ScanCommandOptions {
   aiModel?: string;
 }
 
+/**
+ * Safely run an analyzer, catching errors and logging warnings without crashing
+ */
+async function safeAnalyze<T>(
+  name: string,
+  analyzerFn: () => Promise<T[]>,
+  verbose?: boolean
+): Promise<T[]> {
+  try {
+    return await analyzerFn();
+  } catch (err: any) {
+    console.warn(`⚠️  ${name} analyzer failed: ${err.message}`);
+    if (verbose) {
+      console.error(err);
+    }
+    return [];
+  }
+}
+
 export async function scanCommand(options: ScanCommandOptions) {
   try {
     if (options.provider === 'aws') {
@@ -96,25 +115,27 @@ async function scanSingleRegionAWS(region: string, options: ScanCommandOptions):
 
   info(`Scanning region: ${region}...`);
 
-  // Run analyzers in parallel
-  const ec2Promise = analyzeEC2Instances(client, options.detailedMetrics || false);
-  const ebsPromise = analyzeEBSVolumes(client);
-  const rdsPromise = analyzeRDSInstances(client);
-  const s3Promise = analyzeS3Buckets(client);
-  const elbPromise = analyzeELBs(client);
-  const eipPromise = analyzeElasticIPs(client);
-  const lambdaPromise = analyzeLambdaFunctions(client);
-  const natGatewayPromise = analyzeNATGateways(client);
-  const dynamodbPromise = analyzeDynamoDBTables(client);
-  const cloudwatchLogsPromise = analyzeCloudWatchLogs(client);
-  const snapshotsPromise = analyzeSnapshots(client);
-  const elasticachePromise = analyzeElastiCache(client);
-  const ecsPromise = analyzeECS(client);
-  const cloudfrontPromise = analyzeCloudFrontDistributions(client);
-  const apigatewayPromise = analyzeAPIGateways(client);
-  const eksPromise = analyzeEKS(client, options.detailedMetrics || false);
+  // Run analyzers in parallel with error handling
+  const results = await Promise.all([
+    safeAnalyze('EC2', () => analyzeEC2Instances(client, options.detailedMetrics || false), options.verbose),
+    safeAnalyze('EBS', () => analyzeEBSVolumes(client), options.verbose),
+    safeAnalyze('RDS', () => analyzeRDSInstances(client), options.verbose),
+    safeAnalyze('S3', () => analyzeS3Buckets(client), options.verbose),
+    safeAnalyze('ELB', () => analyzeELBs(client), options.verbose),
+    safeAnalyze('EIP', () => analyzeElasticIPs(client), options.verbose),
+    safeAnalyze('Lambda', () => analyzeLambdaFunctions(client), options.verbose),
+    safeAnalyze('NAT Gateway', () => analyzeNATGateways(client), options.verbose),
+    safeAnalyze('DynamoDB', () => analyzeDynamoDBTables(client), options.verbose),
+    safeAnalyze('CloudWatch Logs', () => analyzeCloudWatchLogs(client), options.verbose),
+    safeAnalyze('Snapshots', () => analyzeSnapshots(client), options.verbose),
+    safeAnalyze('ElastiCache', () => analyzeElastiCache(client), options.verbose),
+    safeAnalyze('ECS', () => analyzeECS(client), options.verbose),
+    safeAnalyze('CloudFront', () => analyzeCloudFrontDistributions(client), options.verbose),
+    safeAnalyze('API Gateway', () => analyzeAPIGateways(client), options.verbose),
+    safeAnalyze('EKS', () => analyzeEKS(client, options.detailedMetrics || false), options.verbose),
+  ]);
 
-  // Wait for all analyzers to complete
+  // Flatten results
   const [
     ec2Opportunities,
     ebsOpportunities,
@@ -132,24 +153,7 @@ async function scanSingleRegionAWS(region: string, options: ScanCommandOptions):
     cloudfrontOpportunities,
     apigatewayOpportunities,
     eksOpportunities,
-  ] = await Promise.all([
-    ec2Promise,
-    ebsPromise,
-    rdsPromise,
-    s3Promise,
-    elbPromise,
-    eipPromise,
-    lambdaPromise,
-    natGatewayPromise,
-    dynamodbPromise,
-    cloudwatchLogsPromise,
-    snapshotsPromise,
-    elasticachePromise,
-    ecsPromise,
-    cloudfrontPromise,
-    apigatewayPromise,
-    eksPromise,
-  ]);
+  ] = results;
 
   // Tag each opportunity with its region
   const regionTag = `[${region}] `;
@@ -580,35 +584,21 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
     }
   }
 
-  // Run analyzers in parallel
-  info('Analyzing Virtual Machines...');
-  const vmPromise = analyzeAzureVMs(client, options.detailedMetrics || false);
+  // Run analyzers in parallel with error handling
+  info('Analyzing Azure resources...');
+  const results = await Promise.all([
+    safeAnalyze('Azure VMs', () => analyzeAzureVMs(client, options.detailedMetrics || false), options.verbose),
+    safeAnalyze('Azure Disks', () => analyzeAzureDisks(client), options.verbose),
+    safeAnalyze('Azure Storage', () => analyzeAzureStorage(client), options.verbose),
+    safeAnalyze('Azure SQL', () => analyzeAzureSQL(client), options.verbose),
+    safeAnalyze('Azure Public IPs', () => analyzeAzurePublicIPs(client), options.verbose),
+    safeAnalyze('App Service Plans', () => analyzeAppServicePlans(client), options.verbose),
+    safeAnalyze('Azure Functions', () => analyzeAzureFunctions(client), options.verbose),
+    safeAnalyze('CosmosDB', () => analyzeCosmosDB(client), options.verbose),
+    safeAnalyze('AKS', () => analyzeAKS(client, options.detailedMetrics || false), options.verbose),
+  ]);
 
-  info('Analyzing Managed Disks...');
-  const diskPromise = analyzeAzureDisks(client);
-
-  info('Analyzing Storage Accounts...');
-  const storagePromise = analyzeAzureStorage(client);
-
-  info('Analyzing SQL Databases...');
-  const sqlPromise = analyzeAzureSQL(client);
-
-  info('Analyzing Public IP Addresses...');
-  const ipPromise = analyzeAzurePublicIPs(client);
-
-  info('Analyzing App Service Plans...');
-  const appServicePromise = analyzeAppServicePlans(client);
-
-  info('Analyzing Azure Functions...');
-  const functionsPromise = analyzeAzureFunctions(client);
-
-  info('Analyzing CosmosDB...');
-  const cosmosdbPromise = analyzeCosmosDB(client);
-
-  info('Analyzing AKS...');
-  const aksPromise = analyzeAKS(client, options.detailedMetrics || false);
-
-  // Wait for all analyzers to complete
+  // Extract results
   const [
     vmOpportunities,
     diskOpportunities,
@@ -619,17 +609,7 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
     functionsOpportunities,
     cosmosdbOpportunities,
     aksOpportunities,
-  ] = await Promise.all([
-    vmPromise,
-    diskPromise,
-    storagePromise,
-    sqlPromise,
-    ipPromise,
-    appServicePromise,
-    functionsPromise,
-    cosmosdbPromise,
-    aksPromise,
-  ]);
+  ] = results;
 
   success(`Found ${vmOpportunities.length} VM opportunities`);
   success(`Found ${diskOpportunities.length} Disk opportunities`);
@@ -881,29 +861,19 @@ async function scanSingleRegionGCP(region: string | undefined, options: ScanComm
     }
   }
 
-  // Run analyzers in parallel
-  info('Analyzing Compute Engine instances...');
-  const gcePromise = analyzeGCEInstances(client, options.detailedMetrics || false);
+  // Run analyzers in parallel with error handling
+  info('Analyzing GCP resources...');
+  const results = await Promise.all([
+    safeAnalyze('GCE', () => analyzeGCEInstances(client, options.detailedMetrics || false), options.verbose),
+    safeAnalyze('GCS', () => analyzeGCSBuckets(client), options.verbose),
+    safeAnalyze('Cloud SQL', () => analyzeCloudSQLInstances(client), options.verbose),
+    safeAnalyze('Persistent Disks', () => analyzePersistentDisks(client), options.verbose),
+    safeAnalyze('Static IPs', () => analyzeStaticIPs(client), options.verbose),
+    safeAnalyze('Load Balancers', () => analyzeLoadBalancers(client), options.verbose),
+    safeAnalyze('GKE', () => analyzeGKE(client, options.detailedMetrics || false), options.verbose),
+  ]);
 
-  info('Analyzing Cloud Storage buckets...');
-  const gcsPromise = analyzeGCSBuckets(client);
-
-  info('Analyzing Cloud SQL instances...');
-  const cloudsqlPromise = analyzeCloudSQLInstances(client);
-
-  info('Analyzing Persistent Disks...');
-  const disksPromise = analyzePersistentDisks(client);
-
-  info('Analyzing Static IPs...');
-  const ipsPromise = analyzeStaticIPs(client);
-
-  info('Analyzing Load Balancers...');
-  const lbPromise = analyzeLoadBalancers(client);
-
-  info('Analyzing GKE clusters...');
-  const gkePromise = analyzeGKE(client, options.detailedMetrics || false);
-
-  // Wait for all analyzers to complete
+  // Extract results
   const [
     gceOpportunities,
     gcsOpportunities,
@@ -912,15 +882,7 @@ async function scanSingleRegionGCP(region: string | undefined, options: ScanComm
     ipsOpportunities,
     lbOpportunities,
     gkeOpportunities,
-  ] = await Promise.all([
-    gcePromise,
-    gcsPromise,
-    cloudsqlPromise,
-    disksPromise,
-    ipsPromise,
-    lbPromise,
-    gkePromise,
-  ]);
+  ] = results;
 
   success(`Found ${gceOpportunities.length} Compute Engine opportunities`);
   success(`Found ${gcsOpportunities.length} Cloud Storage opportunities`);

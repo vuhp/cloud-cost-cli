@@ -90,8 +90,7 @@ export async function analyzeAzureStorage(
 
     return opportunities;
   } catch (error) {
-    console.error('Error analyzing Azure storage:', error);
-    return opportunities;
+    throw error;
   }
 }
 

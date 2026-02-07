@@ -51,9 +51,9 @@ export async function analyzeAzureFunctions(
             serverFarmId.split('/')[4], // resource group
             serverFarmId.split('/')[8]  // plan name
           );
-          
+
           tier = plan.sku?.tier || 'Consumption';
-          
+
           // Estimate cost for Premium plans
           if (tier.startsWith('Elastic')) {
             const skuName = plan.sku?.name || 'EP1';
@@ -118,8 +118,7 @@ export async function analyzeAzureFunctions(
 
     return opportunities;
   } catch (error: any) {
-    console.error('Error analyzing Azure Functions:', error.message);
-    return opportunities;
+    throw error;
   }
 }
 

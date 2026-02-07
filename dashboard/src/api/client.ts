@@ -11,6 +11,7 @@ export interface Scan {
   total_savings: number;
   opportunity_count: number;
   error_message?: string;
+  warnings?: string;  // JSON stringified array of warnings
 }
 
 export interface Opportunity {

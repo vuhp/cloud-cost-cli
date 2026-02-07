@@ -218,8 +218,8 @@ export async function analyzeGKE(
 
         return opportunities;
     } catch (error: any) {
-        console.error('Error analyzing GKE:', error.message);
-        return opportunities;
+        // Re-throw so the scanner wrapper can capture it as a warning
+        throw error;
     }
 }
 
