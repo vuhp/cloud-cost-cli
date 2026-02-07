@@ -7,17 +7,18 @@
 
 A powerful CLI and web dashboard for analyzing AWS, Azure, and GCP resources to identify cost-saving opportunities — idle resources, oversized instances, unattached volumes, and more.
 
+**✨ v0.8.2:** Kubernetes & Containers — Deep analysis for EKS, AKS, and GKE clusters!
 **✨ v0.8.0:** Web Dashboard — Interactive UI with secure credential storage and real-time scans!  
 **✨ v0.8.0:** Multi-region scanning for all clouds — Scan AWS, Azure, and GCP regions at once!  
-**✨ v0.7.0:** Multi-metric analysis — Comprehensive resource utilization (CPU, memory, network, disk) with confidence scoring!
 
 ---
 
 ## Features
 
 - **🖥️ Web Dashboard** — Interactive UI with credential management, real-time scans, and trend charts
+- **Kubernetes & Containers** — Analyze EKS, AKS, and GKE clusters for optimization opportunities
 - **Multi-metric analysis** — CPU + memory + network + disk for high-confidence recommendations (AWS, Azure, GCP)
-- **Multi-cloud support** - AWS (17 analyzers), Azure (10 analyzers), GCP (8 analyzers)
+- **Multi-cloud support** - AWS (18 analyzers), Azure (11 analyzers), GCP (9 analyzers)
 - **Multi-region scanning** — Find resources in all regions at once (AWS, Azure, GCP)
 - **Comparison mode** — Track optimization progress over time
 - **AI-powered explanations** — Human-readable recommendations (OpenAI or local Ollama)
@@ -25,7 +26,7 @@ A powerful CLI and web dashboard for analyzing AWS, Azure, and GCP resources to 
 - **Export formats** — HTML, Excel, CSV, JSON, or terminal table
 - **CI/CD integration** — GitHub Action example for automated scanning
 - **Privacy-first AI** — Use local Ollama (free) or cloud OpenAI
-- **Graceful error handling** — Missing permissions? Tool continues with available analyzers
+- **Graceful error handling** — Scans continue even if specific permissions are missing
 
 ---
 
