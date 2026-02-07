@@ -11,6 +11,7 @@ import { ElastiCacheClient } from '@aws-sdk/client-elasticache';
 import { ECSClient } from '@aws-sdk/client-ecs';
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront';
 import { APIGatewayClient } from '@aws-sdk/client-api-gateway';
+import { EKSClient } from '@aws-sdk/client-eks';
 import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts';
 import { fromIni, fromEnv } from '@aws-sdk/credential-providers';
 import * as fs from 'fs';
@@ -36,13 +37,14 @@ export class AWSClient {
   private ecs: ECSClient;
   private cloudfront: CloudFrontClient;
   private apigateway: APIGatewayClient;
+  private eks: EKSClient;
   private sts: STSClient;
   public region: string;
   public profile: string;
 
   constructor(options: AWSClientOptions) {
     this.profile = options.profile || 'default';
-    
+
     // Determine region: CLI option > profile config > default
     this.region = options.region || this.getProfileRegion(this.profile) || 'us-east-1';
 
@@ -64,6 +66,7 @@ export class AWSClient {
     this.ecs = new ECSClient({ region: this.region, credentials });
     this.cloudfront = new CloudFrontClient({ region: 'us-east-1', credentials });
     this.apigateway = new APIGatewayClient({ region: this.region, credentials });
+    this.eks = new EKSClient({ region: this.region, credentials });
     this.sts = new STSClient({ region: this.region, credentials });
   }
 
@@ -95,14 +98,14 @@ export class AWSClient {
 
       // Profile names in config are prefixed with "profile " except for "default"
       const profileKey = profileName === 'default' ? 'default' : `profile ${profileName}`;
-      
+
       const profileConfig = config[profileKey];
-      
+
       // Handle both regular objects and null prototype objects
       if (profileConfig && typeof profileConfig === 'object') {
         return profileConfig.region || null;
       }
-      
+
       return null;
     } catch (error) {
       // If we can't read the config, just return null
@@ -162,6 +165,10 @@ export class AWSClient {
     return this.apigateway;
   }
 
+  getEKSClient() {
+    return this.eks;
+  }
+
   // Get all enabled AWS regions
   async getAllRegions(): Promise<string[]> {
     try {
@@ -189,9 +196,9 @@ export class AWSClient {
     const credentials = process.env.AWS_ACCESS_KEY_ID
       ? fromEnv()
       : fromIni({ profile: profile || 'default' });
-    
+
     const ec2 = new EC2Client({ region: 'us-east-1', credentials });
-    
+
     try {
       const command = new DescribeRegionsCommand({
         AllRegions: false,

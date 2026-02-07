@@ -14,6 +14,7 @@ import { analyzeElastiCache } from '../providers/aws/elasticache';
 import { analyzeECS } from '../providers/aws/ecs';
 import { analyzeCloudFrontDistributions } from '../providers/aws/cloudfront';
 import { analyzeAPIGateways } from '../providers/aws/apigateway';
+import { analyzeEKS } from '../providers/aws/eks';
 import { AzureClient } from '../providers/azure/client';
 import { analyzeAzureVMs } from '../providers/azure/vms';
 import { analyzeAzureDisks } from '../providers/azure/disks';
@@ -23,6 +24,7 @@ import { analyzeAzurePublicIPs } from '../providers/azure/public-ips';
 import { analyzeAppServicePlans } from '../providers/azure/app-services';
 import { analyzeAzureFunctions } from '../providers/azure/functions';
 import { analyzeCosmosDB } from '../providers/azure/cosmosdb';
+import { analyzeAKS } from '../providers/azure/aks';
 import { GCPClient } from '../providers/gcp/client';
 import { analyzeGCEInstances } from '../providers/gcp/compute';
 import { analyzeGCSBuckets } from '../providers/gcp/storage';
@@ -30,6 +32,7 @@ import { analyzeCloudSQLInstances } from '../providers/gcp/cloudsql';
 import { analyzePersistentDisks } from '../providers/gcp/disks';
 import { analyzeStaticIPs } from '../providers/gcp/static-ips';
 import { analyzeLoadBalancers } from '../providers/gcp/load-balancers';
+import { analyzeGKE } from '../providers/gcp/gke';
 import { ScanReport, SavingsOpportunity } from '../types/opportunity';
 import { renderTable } from '../reporters/table';
 import { renderJSON } from '../reporters/json';
@@ -109,6 +112,7 @@ async function scanSingleRegionAWS(region: string, options: ScanCommandOptions):
   const ecsPromise = analyzeECS(client);
   const cloudfrontPromise = analyzeCloudFrontDistributions(client);
   const apigatewayPromise = analyzeAPIGateways(client);
+  const eksPromise = analyzeEKS(client, options.detailedMetrics || false);
 
   // Wait for all analyzers to complete
   const [
@@ -127,6 +131,7 @@ async function scanSingleRegionAWS(region: string, options: ScanCommandOptions):
     ecsOpportunities,
     cloudfrontOpportunities,
     apigatewayOpportunities,
+    eksOpportunities,
   ] = await Promise.all([
     ec2Promise,
     ebsPromise,
@@ -143,6 +148,7 @@ async function scanSingleRegionAWS(region: string, options: ScanCommandOptions):
     ecsPromise,
     cloudfrontPromise,
     apigatewayPromise,
+    eksPromise,
   ]);
 
   // Tag each opportunity with its region
@@ -169,11 +175,7 @@ async function scanSingleRegionAWS(region: string, options: ScanCommandOptions):
     ...tagOpportunities(ecsOpportunities),
     ...tagOpportunities(cloudfrontOpportunities),
     ...tagOpportunities(apigatewayOpportunities),
-    ...tagOpportunities(dynamodbOpportunities),
-    ...tagOpportunities(cloudwatchLogsOpportunities),
-    ...tagOpportunities(snapshotsOpportunities),
-    ...tagOpportunities(elasticacheOpportunities),
-    ...tagOpportunities(ecsOpportunities),
+    ...tagOpportunities(eksOpportunities),
   ];
 }
 
@@ -193,21 +195,21 @@ async function scanAWS(options: ScanCommandOptions) {
     for (let i = 0; i < regions.length; i += batchSize) {
       const batch = regions.slice(i, i + batchSize);
       info(`Scanning batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(regions.length / batchSize)}: ${batch.join(', ')}`);
-      
+
       const batchResults = await Promise.all(
         batch.map(region => scanSingleRegionAWS(region, options).catch(err => {
           info(`⚠️  Skipped ${region}: ${err.message}`);
           return [] as SavingsOpportunity[];
         }))
       );
-      
+
       batchResults.forEach((results, idx) => {
         if (results.length > 0) {
           success(`✓ ${batch[idx]}: Found ${results.length} opportunities`);
           scannedRegions.push(batch[idx]);
         }
       });
-      
+
       allOpportunities = allOpportunities.concat(...batchResults);
     }
 
@@ -219,7 +221,7 @@ async function scanAWS(options: ScanCommandOptions) {
     });
 
     info(`Scanning AWS account (profile: ${options.profile || 'default'}, region: ${client.region})...`);
-    
+
     if (options.accurate) {
       info('Note: --accurate flag is not yet implemented. Using estimated pricing.');
       info('Real-time pricing will be available in a future release.');
@@ -257,6 +259,7 @@ async function scanAWS(options: ScanCommandOptions) {
     const ecsPromise = analyzeECS(client);
     const cloudfrontPromise = analyzeCloudFrontDistributions(client);
     const apigatewayPromise = analyzeAPIGateways(client);
+    const eksPromise = analyzeEKS(client, options.detailedMetrics || false);
 
     const [
       ec2Opportunities,
@@ -274,6 +277,7 @@ async function scanAWS(options: ScanCommandOptions) {
       ecsOpportunities,
       cloudfrontOpportunities,
       apigatewayOpportunities,
+      eksOpportunities,
     ] = await Promise.all([
       ec2Promise,
       ebsPromise,
@@ -290,6 +294,7 @@ async function scanAWS(options: ScanCommandOptions) {
       ecsPromise,
       cloudfrontPromise,
       apigatewayPromise,
+      eksPromise,
     ]);
 
     success(`Found ${ec2Opportunities.length} EC2 opportunities`);
@@ -307,6 +312,7 @@ async function scanAWS(options: ScanCommandOptions) {
     success(`Found ${ecsOpportunities.length} ECS/Fargate opportunities`);
     success(`Found ${cloudfrontOpportunities.length} CloudFront opportunities`);
     success(`Found ${apigatewayOpportunities.length} API Gateway opportunities`);
+    success(`Found ${eksOpportunities.length} EKS opportunities`);
 
     allOpportunities = [
       ...ec2Opportunities,
@@ -324,162 +330,163 @@ async function scanAWS(options: ScanCommandOptions) {
       ...ecsOpportunities,
       ...cloudfrontOpportunities,
       ...apigatewayOpportunities,
+      ...eksOpportunities,
     ];
   }
 
-    // Filter by minimum savings if specified
-    const minSavings = options.minSavings ? parseFloat(options.minSavings) : 0;
-    const filteredOpportunities = allOpportunities.filter(
-      (opp) => opp.estimatedSavings >= minSavings
-    );
+  // Filter by minimum savings if specified
+  const minSavings = options.minSavings ? parseFloat(options.minSavings) : 0;
+  const filteredOpportunities = allOpportunities.filter(
+    (opp) => opp.estimatedSavings >= minSavings
+  );
 
-    // Calculate totals
-    const totalPotentialSavings = filteredOpportunities.reduce(
-      (sum, opp) => sum + opp.estimatedSavings,
-      0
-    );
+  // Calculate totals
+  const totalPotentialSavings = filteredOpportunities.reduce(
+    (sum, opp) => sum + opp.estimatedSavings,
+    0
+  );
 
-    const summary = {
-      totalResources: filteredOpportunities.length,
-      idleResources: filteredOpportunities.filter((o) => o.category === 'idle').length,
-      oversizedResources: filteredOpportunities.filter((o) => o.category === 'oversized').length,
-      unusedResources: filteredOpportunities.filter((o) => o.category === 'unused').length,
-    };
+  const summary = {
+    totalResources: filteredOpportunities.length,
+    idleResources: filteredOpportunities.filter((o) => o.category === 'idle').length,
+    oversizedResources: filteredOpportunities.filter((o) => o.category === 'oversized').length,
+    unusedResources: filteredOpportunities.filter((o) => o.category === 'unused').length,
+  };
 
-    const report: ScanReport = {
-      provider: 'aws',
-      accountId: 'N/A', // Will fetch from STS in future
-      region: options.allRegions ? `multi-region (${scannedRegions.length} regions)` : (options.region || 'us-east-1'),
-      scanPeriod: {
-        start: new Date(Date.now() - (parseInt(options.days || '30') * 24 * 60 * 60 * 1000)),
-        end: new Date(),
-      },
-      opportunities: filteredOpportunities,
-      totalPotentialSavings,
-      summary,
-    };
+  const report: ScanReport = {
+    provider: 'aws',
+    accountId: 'N/A', // Will fetch from STS in future
+    region: options.allRegions ? `multi-region (${scannedRegions.length} regions)` : (options.region || 'us-east-1'),
+    scanPeriod: {
+      start: new Date(Date.now() - (parseInt(options.days || '30') * 24 * 60 * 60 * 1000)),
+      end: new Date(),
+    },
+    opportunities: filteredOpportunities,
+    totalPotentialSavings,
+    summary,
+  };
 
-    // Show region breakdown for multi-region scans
-    if (options.allRegions) {
-      info('\n📊 Region Breakdown:');
-      const regionGroups = filteredOpportunities.reduce((acc, opp) => {
-        const match = opp.resourceId.match(/^\[([^\]]+)\]/);
-        const region = match ? match[1] : 'unknown';
-        acc[region] = (acc[region] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+  // Show region breakdown for multi-region scans
+  if (options.allRegions) {
+    info('\n📊 Region Breakdown:');
+    const regionGroups = filteredOpportunities.reduce((acc, opp) => {
+      const match = opp.resourceId.match(/^\[([^\]]+)\]/);
+      const region = match ? match[1] : 'unknown';
+      acc[region] = (acc[region] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-      Object.entries(regionGroups)
-        .sort(([, a], [, b]) => b - a)
-        .forEach(([region, count]) => {
-          const regionSavings = filteredOpportunities
-            .filter(o => o.resourceId.startsWith(`[${region}]`))
-            .reduce((sum, o) => sum + o.estimatedSavings, 0);
-          info(`  ${region}: ${count} opportunities, $${regionSavings.toFixed(2)}/month`);
-        });
-      info('');
-    }
-
-    // Render output
-    const topN = parseInt(options.top || '5');
-    let aiService: AIService | undefined;
-    
-    if (options.explain) {
-      // Load config file to get defaults
-      const fileConfig = ConfigLoader.load();
-      
-      // CLI flags override config file
-      const provider = (options.aiProvider as 'openai' | 'ollama') || fileConfig.ai?.provider || 'openai';
-      const model = options.aiModel || fileConfig.ai?.model;
-      const maxExplanations = fileConfig.ai?.maxExplanations;
-      
-      // Debug logging
-      if (process.env.DEBUG) {
-        console.error('options.aiProvider:', options.aiProvider, '(type:', typeof options.aiProvider, ')');
-        console.error('fileConfig.ai?.provider:', fileConfig.ai?.provider);
-        console.error('Provider detected:', provider);
-        console.error('Has API key in config:', !!fileConfig.ai?.apiKey);
-        console.error('Has env API key:', !!process.env.OPENAI_API_KEY);
-      }
-      
-      if (provider === 'openai' && !process.env.OPENAI_API_KEY && !fileConfig.ai?.apiKey) {
-        error('--explain with OpenAI requires OPENAI_API_KEY environment variable or config file');
-        info('Set it with: export OPENAI_API_KEY="sk-..."');
-        info('Or use --ai-provider ollama for local AI (requires Ollama installed)');
-        process.exit(1);
-      }
-      
-      try {
-        aiService = new AIService({
-          provider,
-          apiKey: provider === 'openai' ? (process.env.OPENAI_API_KEY || fileConfig.ai?.apiKey) : undefined,
-          model,
-          maxExplanations,
-        });
-        
-        if (provider === 'ollama') {
-          info('Using local Ollama for AI explanations (privacy-first, no API costs)');
-        }
-      } catch (error: any) {
-        error(`Failed to initialize AI service: ${error.message}`);
-        process.exit(1);
-      }
-    }
-    
-    // Save scan cache for natural language queries
-    saveScanCache(options.provider, options.region, report);
-    
-    // Save report for comparison tracking
-    const savedPath = saveReport(report);
-    info(`Report saved for comparison: ${path.basename(savedPath)}`);
-    
-    // Handle output format
-    if (options.output === 'json') {
-      renderJSON(report);
-    } else if (options.output === 'csv') {
-      const csv = exportToCSV(report.opportunities, { includeMetadata: true });
-      const filename = `cloud-cost-report-${options.provider}-${Date.now()}.csv`;
-      fs.writeFileSync(filename, csv);
-      success(`Report saved to ${filename}`);
-      console.log(`\nTotal opportunities: ${report.opportunities.length}`);
-      console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
-    } else if (options.output === 'excel' || options.output === 'xlsx') {
-      const buffer = exportToExcel(report.opportunities, { 
-        includeMetadata: true,
-        includeSummarySheet: true,
+    Object.entries(regionGroups)
+      .sort(([, a], [, b]) => b - a)
+      .forEach(([region, count]) => {
+        const regionSavings = filteredOpportunities
+          .filter(o => o.resourceId.startsWith(`[${region}]`))
+          .reduce((sum, o) => sum + o.estimatedSavings, 0);
+        info(`  ${region}: ${count} opportunities, $${regionSavings.toFixed(2)}/month`);
       });
-      const filename = `cloud-cost-report-${options.provider}-${Date.now()}.xlsx`;
-      fs.writeFileSync(filename, buffer);
-      success(`Report saved to ${filename}`);
-      console.log(`\nTotal opportunities: ${report.opportunities.length}`);
-      console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
-    } else if (options.output === 'html') {
-      const html = exportToHtml(report.opportunities, {
-        provider: options.provider,
-        region: options.region,
-        totalSavings: report.totalPotentialSavings,
-        scanDate: new Date(),
-      }, {
-        includeCharts: true,
-        theme: 'light',
-      });
-      const filename = `cloud-cost-report-${options.provider}-${Date.now()}.html`;
-      fs.writeFileSync(filename, html);
-      success(`Report saved to ${filename}`);
-      console.log(`\nTotal opportunities: ${report.opportunities.length}`);
-      console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
-      
-      // Try to open in browser
-      try {
-        const open = await import('open');
-        await open.default(filename);
-        info(`Opening report in your browser...`);
-      } catch (err) {
-        info(`Open the file manually: ${filename}`);
-      }
-    } else {
-      await renderTable(report, topN, aiService);
+    info('');
+  }
+
+  // Render output
+  const topN = parseInt(options.top || '5');
+  let aiService: AIService | undefined;
+
+  if (options.explain) {
+    // Load config file to get defaults
+    const fileConfig = ConfigLoader.load();
+
+    // CLI flags override config file
+    const provider = (options.aiProvider as 'openai' | 'ollama') || fileConfig.ai?.provider || 'openai';
+    const model = options.aiModel || fileConfig.ai?.model;
+    const maxExplanations = fileConfig.ai?.maxExplanations;
+
+    // Debug logging
+    if (process.env.DEBUG) {
+      console.error('options.aiProvider:', options.aiProvider, '(type:', typeof options.aiProvider, ')');
+      console.error('fileConfig.ai?.provider:', fileConfig.ai?.provider);
+      console.error('Provider detected:', provider);
+      console.error('Has API key in config:', !!fileConfig.ai?.apiKey);
+      console.error('Has env API key:', !!process.env.OPENAI_API_KEY);
     }
+
+    if (provider === 'openai' && !process.env.OPENAI_API_KEY && !fileConfig.ai?.apiKey) {
+      error('--explain with OpenAI requires OPENAI_API_KEY environment variable or config file');
+      info('Set it with: export OPENAI_API_KEY="sk-..."');
+      info('Or use --ai-provider ollama for local AI (requires Ollama installed)');
+      process.exit(1);
+    }
+
+    try {
+      aiService = new AIService({
+        provider,
+        apiKey: provider === 'openai' ? (process.env.OPENAI_API_KEY || fileConfig.ai?.apiKey) : undefined,
+        model,
+        maxExplanations,
+      });
+
+      if (provider === 'ollama') {
+        info('Using local Ollama for AI explanations (privacy-first, no API costs)');
+      }
+    } catch (error: any) {
+      error(`Failed to initialize AI service: ${error.message}`);
+      process.exit(1);
+    }
+  }
+
+  // Save scan cache for natural language queries
+  saveScanCache(options.provider, options.region, report);
+
+  // Save report for comparison tracking
+  const savedPath = saveReport(report);
+  info(`Report saved for comparison: ${path.basename(savedPath)}`);
+
+  // Handle output format
+  if (options.output === 'json') {
+    renderJSON(report);
+  } else if (options.output === 'csv') {
+    const csv = exportToCSV(report.opportunities, { includeMetadata: true });
+    const filename = `cloud-cost-report-${options.provider}-${Date.now()}.csv`;
+    fs.writeFileSync(filename, csv);
+    success(`Report saved to ${filename}`);
+    console.log(`\nTotal opportunities: ${report.opportunities.length}`);
+    console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
+  } else if (options.output === 'excel' || options.output === 'xlsx') {
+    const buffer = exportToExcel(report.opportunities, {
+      includeMetadata: true,
+      includeSummarySheet: true,
+    });
+    const filename = `cloud-cost-report-${options.provider}-${Date.now()}.xlsx`;
+    fs.writeFileSync(filename, buffer);
+    success(`Report saved to ${filename}`);
+    console.log(`\nTotal opportunities: ${report.opportunities.length}`);
+    console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
+  } else if (options.output === 'html') {
+    const html = exportToHtml(report.opportunities, {
+      provider: options.provider,
+      region: options.region,
+      totalSavings: report.totalPotentialSavings,
+      scanDate: new Date(),
+    }, {
+      includeCharts: true,
+      theme: 'light',
+    });
+    const filename = `cloud-cost-report-${options.provider}-${Date.now()}.html`;
+    fs.writeFileSync(filename, html);
+    success(`Report saved to ${filename}`);
+    console.log(`\nTotal opportunities: ${report.opportunities.length}`);
+    console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
+
+    // Try to open in browser
+    try {
+      const open = await import('open');
+      await open.default(filename);
+      info(`Opening report in your browser...`);
+    } catch (err) {
+      info(`Open the file manually: ${filename}`);
+    }
+  } else {
+    await renderTable(report, topN, aiService);
+  }
 }
 
 async function scanAzure(options: ScanCommandOptions) {
@@ -495,14 +502,14 @@ async function scanAzure(options: ScanCommandOptions) {
       'westeurope', 'northeurope', 'uksouth', 'ukwest',
       'southeastasia', 'eastasia', 'australiaeast',
     ];
-    
+
     info(`Scanning ${locations.length} locations: ${locations.join(', ')}\n`);
 
     for (const location of locations) {
       try {
         info(`Scanning location: ${location}...`);
         const opportunities = await scanSingleLocationAzure(location, options);
-        
+
         if (opportunities && opportunities.length > 0) {
           success(`✓ ${location}: Found ${opportunities.length} opportunities`);
           scannedLocations.push(location);
@@ -514,7 +521,7 @@ async function scanAzure(options: ScanCommandOptions) {
     }
 
     success(`\n✓ Completed multi-location scan across ${scannedLocations.length} locations`);
-    
+
     // Output multi-location results
     const totalPotentialSavings = allOpportunities.reduce((sum, opp) => sum + opp.estimatedSavings, 0);
     const report: ScanReport = {
@@ -559,7 +566,7 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
     } else {
       info('Scanning all locations (no filter specified)');
     }
-    
+
     // Test Azure credentials before scanning
     try {
       await client.testConnection();
@@ -567,7 +574,7 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
       error(err.message);
       process.exit(1);
     }
-    
+
     if (options.accurate) {
       info('Note: --accurate flag is not yet implemented. Using estimated pricing.');
     }
@@ -598,6 +605,9 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
   info('Analyzing CosmosDB...');
   const cosmosdbPromise = analyzeCosmosDB(client);
 
+  info('Analyzing AKS...');
+  const aksPromise = analyzeAKS(client, options.detailedMetrics || false);
+
   // Wait for all analyzers to complete
   const [
     vmOpportunities,
@@ -608,6 +618,7 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
     appServiceOpportunities,
     functionsOpportunities,
     cosmosdbOpportunities,
+    aksOpportunities,
   ] = await Promise.all([
     vmPromise,
     diskPromise,
@@ -617,6 +628,7 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
     appServicePromise,
     functionsPromise,
     cosmosdbPromise,
+    aksPromise,
   ]);
 
   success(`Found ${vmOpportunities.length} VM opportunities`);
@@ -627,6 +639,7 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
   success(`Found ${appServiceOpportunities.length} App Service opportunities`);
   success(`Found ${functionsOpportunities.length} Azure Functions opportunities`);
   success(`Found ${cosmosdbOpportunities.length} CosmosDB opportunities`);
+  success(`Found ${aksOpportunities.length} AKS opportunities`);
 
   // Combine opportunities
   const allOpportunities: SavingsOpportunity[] = [
@@ -638,6 +651,7 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
     ...appServiceOpportunities,
     ...functionsOpportunities,
     ...cosmosdbOpportunities,
+    ...aksOpportunities,
   ];
 
   // Tag opportunities with location if in multi-location scan
@@ -688,16 +702,16 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
   // Render output
   const topN = parseInt(options.top || '5');
   let aiService: AIService | undefined;
-  
+
   if (options.explain) {
     // Load config file to get defaults
     const fileConfig = ConfigLoader.load();
-    
+
     // CLI flags override config file
     const provider = (options.aiProvider as 'openai' | 'ollama') || fileConfig.ai?.provider || 'openai';
     const model = options.aiModel || fileConfig.ai?.model;
     const maxExplanations = fileConfig.ai?.maxExplanations;
-    
+
     // Debug logging
     if (process.env.DEBUG) {
       console.error('options.aiProvider:', options.aiProvider, '(type:', typeof options.aiProvider, ')');
@@ -706,14 +720,14 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
       console.error('Has API key in config:', !!fileConfig.ai?.apiKey);
       console.error('Has env API key:', !!process.env.OPENAI_API_KEY);
     }
-    
+
     if (provider === 'openai' && !process.env.OPENAI_API_KEY && !fileConfig.ai?.apiKey) {
       error('--explain with OpenAI requires OPENAI_API_KEY environment variable or config file');
       info('Set it with: export OPENAI_API_KEY="sk-..."');
       info('Or use --ai-provider ollama for local AI (requires Ollama installed)');
       process.exit(1);
     }
-    
+
     try {
       aiService = new AIService({
         provider,
@@ -721,7 +735,7 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
         model,
         maxExplanations,
       });
-      
+
       if (provider === 'ollama') {
         info('Using local Ollama for AI explanations (privacy-first, no API costs)');
       }
@@ -730,10 +744,10 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
       process.exit(1);
     }
   }
-  
+
   // Save scan cache for natural language queries
   saveScanCache('azure', client.location, report);
-  
+
   // Handle output format
   if (options.output === 'json') {
     renderJSON(report);
@@ -745,7 +759,7 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
     console.log(`\nTotal opportunities: ${report.opportunities.length}`);
     console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
   } else if (options.output === 'excel' || options.output === 'xlsx') {
-    const buffer = exportToExcel(report.opportunities, { 
+    const buffer = exportToExcel(report.opportunities, {
       includeMetadata: true,
       includeSummarySheet: true,
     });
@@ -769,7 +783,7 @@ async function scanSingleLocationAzure(location: string | undefined, options: Sc
     success(`Report saved to ${filename}`);
     console.log(`\nTotal opportunities: ${report.opportunities.length}`);
     console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
-    
+
     // Try to open in browser
     try {
       const open = await import('open');
@@ -796,14 +810,14 @@ async function scanGCP(options: ScanCommandOptions) {
       'europe-west1', 'europe-west2', 'europe-west3',
       'asia-southeast1', 'asia-northeast1', 'asia-east1',
     ];
-    
+
     info(`Scanning ${regions.length} regions: ${regions.join(', ')}\n`);
 
     for (const region of regions) {
       try {
         info(`Scanning region: ${region}...`);
         const opportunities = await scanSingleRegionGCP(region, options);
-        
+
         if (opportunities && opportunities.length > 0) {
           success(`✓ ${region}: Found ${opportunities.length} opportunities`);
           scannedRegions.push(region);
@@ -815,7 +829,7 @@ async function scanGCP(options: ScanCommandOptions) {
     }
 
     success(`\n✓ Completed multi-region scan across ${scannedRegions.length} regions`);
-    
+
     // Output multi-region results
     const totalPotentialSavings = allOpportunities.reduce((sum, opp) => sum + opp.estimatedSavings, 0);
     const report: ScanReport = {
@@ -886,6 +900,9 @@ async function scanSingleRegionGCP(region: string | undefined, options: ScanComm
   info('Analyzing Load Balancers...');
   const lbPromise = analyzeLoadBalancers(client);
 
+  info('Analyzing GKE clusters...');
+  const gkePromise = analyzeGKE(client, options.detailedMetrics || false);
+
   // Wait for all analyzers to complete
   const [
     gceOpportunities,
@@ -894,6 +911,7 @@ async function scanSingleRegionGCP(region: string | undefined, options: ScanComm
     disksOpportunities,
     ipsOpportunities,
     lbOpportunities,
+    gkeOpportunities,
   ] = await Promise.all([
     gcePromise,
     gcsPromise,
@@ -901,6 +919,7 @@ async function scanSingleRegionGCP(region: string | undefined, options: ScanComm
     disksPromise,
     ipsPromise,
     lbPromise,
+    gkePromise,
   ]);
 
   success(`Found ${gceOpportunities.length} Compute Engine opportunities`);
@@ -909,6 +928,7 @@ async function scanSingleRegionGCP(region: string | undefined, options: ScanComm
   success(`Found ${disksOpportunities.length} Persistent Disk opportunities`);
   success(`Found ${ipsOpportunities.length} Static IP opportunities`);
   success(`Found ${lbOpportunities.length} Load Balancer opportunities`);
+  success(`Found ${gkeOpportunities.length} GKE opportunities`);
 
   // Combine opportunities
   const allOpportunities: SavingsOpportunity[] = [
@@ -918,6 +938,7 @@ async function scanSingleRegionGCP(region: string | undefined, options: ScanComm
     ...disksOpportunities,
     ...ipsOpportunities,
     ...lbOpportunities,
+    ...gkeOpportunities,
   ];
 
   // Tag opportunities with region if in multi-region scan
@@ -1031,7 +1052,7 @@ async function scanSingleRegionGCP(region: string | undefined, options: ScanComm
     console.log(`\nTotal opportunities: ${report.opportunities.length}`);
     console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
   } else if (options.output === 'excel' || options.output === 'xlsx') {
-    const buffer = exportToExcel(report.opportunities, { 
+    const buffer = exportToExcel(report.opportunities, {
       includeMetadata: true,
       includeSummarySheet: true,
     });
@@ -1055,7 +1076,7 @@ async function scanSingleRegionGCP(region: string | undefined, options: ScanComm
     success(`Report saved to ${filename}`);
     console.log(`\nTotal opportunities: ${report.opportunities.length}`);
     console.log(`Total potential savings: $${report.totalPotentialSavings.toFixed(2)}/month`);
-    
+
     // Try to open in browser
     try {
       const open = await import('open');

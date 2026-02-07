@@ -17,7 +17,7 @@ A powerful CLI and web dashboard for analyzing AWS, Azure, and GCP resources to 
 
 - **🖥️ Web Dashboard** — Interactive UI with credential management, real-time scans, and trend charts
 - **Multi-metric analysis** — CPU + memory + network + disk for high-confidence recommendations (AWS, Azure, GCP)
-- **Multi-cloud support** - AWS (15 analyzers), Azure (9 analyzers), GCP (7 analyzers)
+- **Multi-cloud support** - AWS (17 analyzers), Azure (10 analyzers), GCP (8 analyzers)
 - **Multi-region scanning** — Find resources in all regions at once (AWS, Azure, GCP)
 - **Comparison mode** — Track optimization progress over time
 - **AI-powered explanations** — Human-readable recommendations (OpenAI or local Ollama)

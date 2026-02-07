@@ -6,6 +6,7 @@ import { NetworkManagementClient } from '@azure/arm-network';
 import { MonitorClient } from '@azure/arm-monitor';
 import { WebSiteManagementClient } from '@azure/arm-appservice';
 import { CosmosDBManagementClient } from '@azure/arm-cosmosdb';
+import { ContainerServiceClient } from '@azure/arm-containerservice';
 
 export interface AzureClientConfig {
   subscriptionId?: string;
@@ -20,10 +21,10 @@ export class AzureClient {
   constructor(config: AzureClientConfig = {}) {
     // Use Azure SDK's default credential chain (env vars, CLI, managed identity)
     this.credential = new DefaultAzureCredential();
-    
+
     // Get subscription ID from env or config
     this.subscriptionId = config.subscriptionId || process.env.AZURE_SUBSCRIPTION_ID || '';
-    
+
     if (!this.subscriptionId) {
       throw new Error(
         'Azure subscription ID not found. Set AZURE_SUBSCRIPTION_ID environment variable or use --subscription-id flag.'
@@ -44,12 +45,12 @@ export class AzureClient {
       await vmsIterator.next();
     } catch (error: any) {
       const errorMsg = error.message || '';
-      if (errorMsg.includes('No subscriptions found') || 
-          errorMsg.includes('authentication') || 
-          errorMsg.includes('credentials') || 
-          errorMsg.includes('login') ||
-          error.statusCode === 401 || 
-          error.code === 'CredentialUnavailableError') {
+      if (errorMsg.includes('No subscriptions found') ||
+        errorMsg.includes('authentication') ||
+        errorMsg.includes('credentials') ||
+        errorMsg.includes('login') ||
+        error.statusCode === 401 ||
+        error.code === 'CredentialUnavailableError') {
         throw new Error(
           'Azure authentication failed. Choose one of these options:\n\n' +
           'Option 1 - Azure CLI (easiest):\n' +
@@ -93,5 +94,9 @@ export class AzureClient {
 
   getCosmosDBManagementClient(): CosmosDBManagementClient {
     return new CosmosDBManagementClient(this.credential, this.subscriptionId);
+  }
+
+  getContainerServiceClient(): ContainerServiceClient {
+    return new ContainerServiceClient(this.credential, this.subscriptionId);
   }
 }
