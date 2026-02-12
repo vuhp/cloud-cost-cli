@@ -86,6 +86,31 @@ export default function ScanDetail() {
           {scan.account_id && <span>👤 Account: {scan.account_id}</span>}
           {scan.region && <span>🌍 {scan.region}</span>}
         </div>
+        <div className="mt-4">
+          <button
+            onClick={async () => {
+              try {
+                const resp = await fetch(`/api/scans/${scan.id}/export?format=excel`);
+                if (!resp.ok) throw new Error('Failed to export');
+                const blob = await resp.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `scan-${scan.id}-opportunities.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+              } catch (err) {
+                console.error('Export failed', err);
+                alert('Export failed. Check server logs.');
+              }
+            }}
+            className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+          >
+            Export Excel
+          </button>
+        </div>
       </div>
 
       {/* Warnings Banner */}

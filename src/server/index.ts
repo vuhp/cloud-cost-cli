@@ -245,6 +245,49 @@ app.delete('/api/credentials/:id', (req: Request, res: Response) => {
   }
 });
 
+// Export scan (Excel)
+app.get('/api/scans/:id/export', async (req: Request, res: Response) => {
+  try {
+    const idParam = req.params.id;
+    const scanId = parseInt(typeof idParam === 'string' ? idParam : idParam[0]);
+    const format = (req.query.format as string) || 'excel';
+
+    const scan = getScan(scanId);
+    if (!scan) return res.status(404).json({ error: 'Scan not found' });
+
+    const opportunities = getOpportunities(scanId);
+
+    if (format === 'excel') {
+      const XLSX = await import('xlsx');
+      const wb = XLSX.utils.book_new();
+
+      const rows = opportunities.map((o: any) => ({
+        Type: o.resourceType,
+        Resource: o.resourceId,
+        Recommendation: o.recommendation,
+        Confidence: o.confidence,
+        EstimatedSavings: o.estimatedSavings,
+        CurrentCost: o.currentCost || '',
+        Category: o.category,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, 'Opportunities');
+
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Disposition', `attachment; filename="scan-${scanId}-opportunities.xlsx"`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      return res.send(buf);
+    }
+
+    res.status(400).json({ error: 'Unsupported format' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 // Serve static files (React app will be here)
 const dashboardPath = path.join(__dirname, '../../dashboard/dist');
 
