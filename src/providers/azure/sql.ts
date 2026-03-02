@@ -1,6 +1,6 @@
 import { AzureClient } from './client';
 import { SavingsOpportunity } from '../../types/opportunity';
-import { getAzureSQLMonthlyCost } from '../../analyzers/cost-estimator';
+import { getSqlPriceEstimate } from '../../utils/azure-pricing';
 
 export async function analyzeAzureSQL(
   client: AzureClient
@@ -33,7 +33,44 @@ export async function analyzeAzureSQL(
 
           const sku = db.sku?.name || 'Unknown';
           const tier = db.sku?.tier || 'Unknown';
-          const currentCost = getAzureSQLMonthlyCost(sku);
+
+          // Try to determine size: prefer monitor metric (actual used) then db.maxSizeBytes then unknown
+          let sizeBytes: number | null = null;
+          try {
+            // Some DBs have properties.maxSizeBytes
+            if (db.maxSizeBytes) {
+              sizeBytes = Number(db.maxSizeBytes);
+            }
+          } catch {}
+
+          // Try monitor metric for storage used (prefer actual usage)
+          try {
+            const used = await getRecentStorageUsed(monitorClient, db.id, 7);
+            if (used && used > 0) {
+              sizeBytes = used;
+            }
+          } catch (err) {
+            // ignore
+          }
+
+          const sizeGB = sizeBytes ? +(sizeBytes / (1024 * 1024 * 1024)).toFixed(2) : null;
+
+          // Estimate current cost using SKU-based estimator (may not include storage)
+          const price = getSqlPriceEstimate({ skuName: sku, region: db.location, sizeGB: sizeGB ?? undefined });
+          const currentCost = price.monthly;
+
+          const baseMetadata: any = {
+            sku,
+            tier,
+            server: server.name,
+            location: db.location,
+            priceBreakdown: price.breakdown,
+            currency: price.currency,
+          };
+          if (sizeBytes) baseMetadata.sizeBytes = sizeBytes;
+
+          // default cost source is 'calculated'
+          const costSource: 'actual' | 'estimated' | 'calculated' = 'calculated';
 
           // Get DTU/CPU usage metrics
           const avgDtu = await getAverageDTU(monitorClient, db.id, 7);
@@ -52,12 +89,11 @@ export async function analyzeAzureSQL(
               confidence: 'medium',
               recommendation: `Database is underutilized (${avgDtu.toFixed(1)}% avg DTU). Consider downsizing tier.`,
               metadata: {
-                sku,
-                tier,
+                ...baseMetadata,
                 avgDtu,
-                server: server.name,
-                location: db.location,
               },
+              size_gb: sizeGB,
+              costSource,
               detectedAt: new Date(),
             });
           }
@@ -76,11 +112,11 @@ export async function analyzeAzureSQL(
               confidence: 'low',
               recommendation: 'Consider switching from Business Critical to General Purpose tier if high availability is not required.',
               metadata: {
-                sku,
-                tier,
+                ...baseMetadata,
                 avgDtu,
-                server: server.name,
               },
+              size_gb: sizeGB,
+              costSource,
               detectedAt: new Date(),
             });
           }
@@ -132,6 +168,47 @@ async function getAverageDTU(
     return sum / values.length;
   } catch (error) {
     return 0;
+  }
+}
+
+async function getRecentStorageUsed(monitorClient: any, resourceId: string, days: number): Promise<number | null> {
+  try {
+    const endTime = new Date();
+    const startTime = new Date();
+    startTime.setDate(startTime.getDate() - days);
+
+    // Try common metric names for SQL storage
+    const metricNames = ['storage_used_bytes', 'storage', 'data_storage', 'storageBytes'];
+
+    for (const name of metricNames) {
+      try {
+        const metrics = await monitorClient.metrics.list(resourceId, {
+          timespan: `${startTime.toISOString()}/${endTime.toISOString()}`,
+          interval: 'PT1H',
+          metricnames: name,
+          aggregation: 'Average',
+        });
+
+        const timeseries = metrics.value?.[0]?.timeseries?.[0]?.data || [];
+        const values = timeseries
+          .map((d: any) => d.average || d.total || d.maximum)
+          .filter((v: any) => v !== null && v !== undefined && !isNaN(v));
+
+        if (values.length > 0) {
+          // take 95th percentile-ish by sorting and picking near the top to avoid spikes
+          values.sort((a: number, b: number) => a - b);
+          const idx = Math.max(0, Math.floor(values.length * 0.95) - 1);
+          return values[idx];
+        }
+      } catch (err) {
+        // try next metric name
+        continue;
+      }
+    }
+
+    return null;
+  } catch (err) {
+    return null;
   }
 }
 

@@ -77,11 +77,17 @@ function createOpportunitiesSheet(
       'Resource Name': opp.resourceName || '',
       Category: opp.category,
       Recommendation: opp.recommendation,
-      'Current Cost ($/mo)': parseFloat(opp.currentCost.toFixed(2)),
-      'Est. Savings ($/mo)': parseFloat(opp.estimatedSavings.toFixed(2)),
-      'Est. Savings ($/yr)': parseFloat((opp.estimatedSavings * 12).toFixed(2)),
+      'Current Cost ($/mo)': opp.currentCost != null ? parseFloat(opp.currentCost.toFixed(2)) : '',
+      'Est. Savings ($/mo)': opp.estimatedSavings != null ? parseFloat(opp.estimatedSavings.toFixed(2)) : '',
+      'Est. Savings ($/yr)': opp.estimatedSavings != null ? parseFloat((opp.estimatedSavings * 12).toFixed(2)) : '',
       Confidence: opp.confidence,
-      'Detected At': opp.detectedAt.toISOString().split('T')[0],
+      'Detected At': opp.detectedAt ? opp.detectedAt.toISOString().split('T')[0] : '',
+      // Additional columns from metadata if present
+      'Size (GB)': opp.metadata?.sizeBytes ? +(opp.metadata.sizeBytes / (1024*1024*1024)).toFixed(2) : '',
+      'Compute ($/mo)': opp.metadata?.priceBreakdown?.compute != null ? parseFloat(opp.metadata.priceBreakdown.compute.toFixed(2)) : '',
+      'Storage ($/mo)': opp.metadata?.priceBreakdown?.storage != null ? parseFloat(opp.metadata.priceBreakdown.storage.toFixed(2)) : '',
+      Currency: opp.metadata?.currency || '',
+      'Cost Source': (opp as any).costSource || opp.metadata?.costSource || '',
     };
 
     // Add metadata columns if requested
